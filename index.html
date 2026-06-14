@@ -28,13 +28,57 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 10px;
+    margin-bottom: 12px;
+    padding: 13px 16px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #181826 0%, #20203a 50%, #262644 100%);
+    border: 0.5px solid #33335a;
+    box-shadow: 0 4px 14px rgba(80, 70, 180, 0.18);
+    position: relative;
+    overflow: hidden;
   }
-  .header h1 { font-size: 15px; font-weight: 500; color: #e8e8e8; }
-  .save-status { font-size: 10px; color: #555; transition: color 0.3s; }
-  .save-status.saving { color: #888; }
-  .save-status.saved  { color: #5a9e4a; }
-  .save-status.error  { color: #d95a5a; }
+  .header::before {
+    content: '';
+    position: absolute;
+    top: -50%; right: -10%;
+    width: 130px; height: 130px;
+    background: radial-gradient(circle, rgba(122,110,255,0.25), transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+  }
+  .header::after {
+    content: '';
+    position: absolute;
+    left: 0; bottom: 0; width: 100%; height: 2px;
+    background: linear-gradient(90deg, #6e6ee8, transparent 75%);
+    opacity: 0.5;
+  }
+  .header-left { display: flex; flex-direction: column; gap: 4px; z-index: 1; min-width: 0; }
+  .header-badge {
+    display: inline-block; align-self: flex-start;
+    font-size: 9px; font-weight: 700; letter-spacing: 1.2px;
+    text-transform: uppercase; color: #a9b6ff;
+    background: rgba(122,110,255,0.10);
+    border: 1px solid rgba(138,150,255,0.45);
+    border-radius: 20px; padding: 2px 9px;
+  }
+  .header h1 {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 18px; font-weight: 700; color: #f3f3fa;
+    letter-spacing: 0.2px;
+  }
+  .header-heart { font-size: 16px; line-height: 1; }
+  #text_title { outline: none; word-break: break-word; }
+  #text_title.placeholder::before { content: '내 스케줄 대시보드'; color: rgba(243,243,250,0.4); }
+  #text_title:focus { text-decoration: underline dotted rgba(243,243,250,0.35); }
+  .header-date {
+    font-size: 10px; color: #8a8ab0;
+    letter-spacing: 0.4px;
+  }
+  .save-status { font-size: 10px; color: #6e6e8c; transition: color 0.3s; z-index: 1; flex-shrink: 0; }
+  .save-status.saving { color: #c7c7e6; }
+  .save-status.saved  { color: #6fdc7a; }
+  .save-status.error  { color: #ff8a8a; }
 
   /* ── Section ── */
   .section { margin-bottom: 12px; }
@@ -249,7 +293,11 @@
 <body>
 
   <div class="header">
-    <h1>내 스케줄 대시보드</h1>
+    <div class="header-left">
+      <span class="header-badge">SCHEDULE TRACKER</span>
+      <h1><span class="header-heart">❤️</span><span id="text_title" contenteditable="true" spellcheck="false"></span></h1>
+      <span class="header-date" id="headerDate"></span>
+    </div>
     <span class="save-status" id="saveStatus">● 로딩 중...</span>
   </div>
 
@@ -608,13 +656,15 @@
     // ════════════════════════════════════════════════════════
     //  오늘할거 / 이번주할거 / 일년목표 / 루틴 (자유텍스트)
     // ════════════════════════════════════════════════════════
-    const TEXT_KEYS = ['today', 'week', 'year', 'routine'];
+    const TEXT_KEYS = ['title', 'today', 'week', 'year', 'routine'];
+    const TEXT_DEFAULTS = { title: '내 스케줄 대시보드' };
     let texts = lsGet('texts', {});
 
     function applyTexts() {
       TEXT_KEYS.forEach(key => {
         const el = document.getElementById('text_' + key);
-        const val = texts[key] || '';
+        let val = texts[key];
+        if (val === undefined) val = TEXT_DEFAULTS[key] !== undefined ? TEXT_DEFAULTS[key] : '';
         el.textContent = val;
         el.classList.toggle('placeholder', !val.trim());
       });
@@ -1024,8 +1074,16 @@
       }
     }
 
+    function renderHeaderDate() {
+      const days = ['일','월','화','수','목','금','토'];
+      const d = new Date();
+      const el = document.getElementById('headerDate');
+      if (el) el.textContent = `${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일 (${days[d.getDay()]})`;
+    }
+
     function init() {
       // Supabase 연결 여부와 상관없이 먼저 화면을 그린다
+      renderHeaderDate();
       renderProgress();
       renderRoutines();
       applyTexts();
