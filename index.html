@@ -166,6 +166,30 @@
   .page-list-item:active { background: #232323; }
   .page-arrow { color: #555; font-size: 13px; }
 
+  /* ── 바로가기: 텍스트형 항목 (제목+내용 직접입력) ── */
+  .shortcut-text-item {
+    display: flex; align-items: flex-start; gap: 8px;
+    padding: 8px 12px; background: #1a1a1a;
+    border: 0.5px solid #2a2a2a; border-radius: 6px;
+  }
+  .shortcut-text-title {
+    flex-shrink: 0; width: 78px; font-size: 11px;
+    font-weight: 500; color: #888; padding-top: 1px;
+    outline: none; white-space: pre-wrap; word-break: break-word;
+  }
+  .shortcut-text-title.placeholder::before { content: '제목'; color: #3a3a3a; }
+  .shortcut-text-content {
+    flex: 1; font-size: 12px; color: #ddd; outline: none;
+    white-space: pre-wrap; word-break: break-word; min-height: 18px;
+  }
+  .shortcut-text-content.placeholder::before { content: '내용 입력...'; color: #3a3a3a; }
+  .shortcut-text-title:focus, .shortcut-text-content:focus { background: rgba(58,90,122,0.06); }
+  .shortcut-del {
+    background: none; border: none; cursor: pointer;
+    color: #3a3a3a; font-size: 13px; padding: 2px 4px; flex-shrink: 0;
+  }
+  .shortcut-del:hover { color: #d95a5a; }
+
   /* ── 페이지 상세 뷰 ── */
   .page-view {
     display: none;
@@ -218,6 +242,7 @@
   @media (max-width: 640px) {
     body { padding: 10px; }
     .quick-label { width: 64px; font-size: 10px; }
+    .shortcut-text-title { width: 64px; font-size: 10px; }
   }
 </style>
 </head>
@@ -284,7 +309,10 @@
   <div class="section">
     <div class="section-title-row">
       <div class="section-title">바로가기</div>
-      <button class="add-btn" onclick="addPage()">＋ 페이지추가</button>
+      <div style="display:flex; gap:6px;">
+        <button class="add-btn" onclick="addTextShortcut()">＋ 텍스트추가</button>
+        <button class="add-btn" onclick="addPage()">＋ 페이지추가</button>
+      </div>
     </div>
     <div class="page-list" id="pageList"></div>
   </div>
@@ -620,8 +648,7 @@
     //  바로가기 (하위페이지)
     // ════════════════════════════════════════════════════════
     function defaultPages() {
-      const titles = ['가봐야할곳', '가볼곳,읽을책,볼영화', '사고싶은거', '다음에 살 집 구상', '송파여성직업', '보험사와협상대본', '명언', '오빠나 건강체크', '골프방법'];
-      return titles.map((t, i) => ({ id: uid(), title: t, content: '', sort_order: i }));
+      return [];
     }
 
     let pages = lsGet('pages', null) || defaultPages();
@@ -631,39 +658,143 @@
       const wrap = document.getElementById('pageList');
       wrap.innerHTML = '';
       pages.forEach(p => {
-        const row = document.createElement('div');
-        row.className = 'page-list-item';
-        const span = document.createElement('span');
-        span.textContent = p.title || '(제목없음)';
-        const arrow = document.createElement('span');
-        arrow.className = 'page-arrow';
-        arrow.textContent = '›';
-        row.appendChild(span);
-        row.appendChild(arrow);
-        row.onclick = () => openPage(p.id);
-        wrap.appendChild(row);
+        if (p.type === 'text') {
+          const row = document.createElement('div');
+          row.className = 'shortcut-text-item';
+
+          const title = document.createElement('div');
+          title.className = 'shortcut-text-title';
+          title.contentEditable = 'true';
+          title.spellcheck = false;
+          title.textContent = p.title || '';
+          title.classList.toggle('placeholder', !p.title);
+          title.addEventListener('focus', () => title.classList.remove('placeholder'));
+          title.addEventListener('blur', () => {
+            const v = title.textContent.trim();
+            title.classList.toggle('placeholder', !v);
+            saveShortcutField(p, 'title', v);
+          });
+
+          const content = document.createElement('div');
+          content.className = 'shortcut-text-content';
+          content.contentEditable = 'true';
+          content.spellcheck = false;
+          content.textContent = p.content || '';
+          content.classList.toggle('placeholder', !(p.content || '').trim());
+          content.addEventListener('focus', () => content.classList.remove('placeholder'));
+          content.addEventListener('blur', () => {
+            const v = content.textContent;
+            content.classList.toggle('placeholder', !v.trim());
+            saveShortcutField(p, 'content', v);
+          });
+
+          const del = document.createElement('button');
+          del.className = 'shortcut-del';
+          del.textContent = '✕';
+          del.onclick = () => deleteShortcut(p.id);
+
+          row.appendChild(title);
+          row.appendChild(content);
+          row.appendChild(del);
+          wrap.appendChild(row);
+        } else {
+          const row = document.createElement('div');
+          row.className = 'page-list-item';
+          const span = document.createElement('span');
+          span.textContent = p.title || '(제목없음)';
+          const right = document.createElement('span');
+          right.style.display = 'flex';
+          right.style.alignItems = 'center';
+          right.style.gap = '6px';
+          const del = document.createElement('button');
+          del.className = 'shortcut-del';
+          del.textContent = '✕';
+          del.onclick = (e) => { e.stopPropagation(); deleteShortcut(p.id); };
+          const arrow = document.createElement('span');
+          arrow.className = 'page-arrow';
+          arrow.textContent = '›';
+          right.appendChild(del);
+          right.appendChild(arrow);
+          row.appendChild(span);
+          row.appendChild(right);
+          row.onclick = () => openPage(p.id);
+          wrap.appendChild(row);
+        }
       });
+    }
+
+    async function saveShortcutField(item, field, val) {
+      item[field] = val;
+      lsSet('pages', pages);
+      if (SUPA_READY && isRemoteId(item.id)) {
+        setStatus('saving');
+        try {
+          const { error } = await db.from('pages').update({ [field]: val }).eq('id', item.id);
+          setStatus(error ? 'error' : 'saved');
+        } catch (e) { console.error(e); setStatus('error'); }
+      } else {
+        setStatus(SUPA_READY ? 'saved' : 'local');
+      }
+    }
+
+    async function addTextShortcut() {
+      const order = pages.length;
+      const newItem = { type: 'text', title: '', content: '', sort_order: order };
+      if (SUPA_READY) {
+        setStatus('saving');
+        try {
+          const { data, error } = await db.from('pages').insert(newItem).select().single();
+          if (error) throw error;
+          pages.push(data);
+          setStatus('saved');
+        } catch (e) {
+          console.error(e);
+          pages.push({ id: uid(), ...newItem });
+          setStatus('error');
+        }
+      } else {
+        pages.push({ id: uid(), ...newItem });
+        setStatus('local');
+      }
+      lsSet('pages', pages);
+      renderPages();
+    }
+
+    async function deleteShortcut(id) {
+      if (!confirm('이 항목을 삭제할까요?')) return;
+      pages = pages.filter(x => x.id !== id);
+      lsSet('pages', pages);
+      renderPages();
+      if (SUPA_READY && isRemoteId(id)) {
+        setStatus('saving');
+        try {
+          const { error } = await db.from('pages').delete().eq('id', id);
+          setStatus(error ? 'error' : 'saved');
+        } catch (e) { console.error(e); setStatus('error'); }
+      } else {
+        setStatus(SUPA_READY ? 'saved' : 'local');
+      }
     }
 
     async function addPage() {
       const title = prompt('페이지 제목을 입력하세요:');
       if (!title || !title.trim()) return;
       const order = pages.length;
+      const newItem = { type: 'link', title: title.trim(), content: '', sort_order: order };
       if (SUPA_READY) {
         setStatus('saving');
         try {
-          const { data, error } = await db.from('pages')
-            .insert({ title: title.trim(), content: '', sort_order: order }).select().single();
+          const { data, error } = await db.from('pages').insert(newItem).select().single();
           if (error) throw error;
           pages.push(data);
           setStatus('saved');
         } catch (e) {
           console.error(e);
-          pages.push({ id: uid(), title: title.trim(), content: '', sort_order: order });
+          pages.push({ id: uid(), ...newItem });
           setStatus('error');
         }
       } else {
-        pages.push({ id: uid(), title: title.trim(), content: '', sort_order: order });
+        pages.push({ id: uid(), ...newItem });
         setStatus('local');
       }
       lsSet('pages', pages);
