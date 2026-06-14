@@ -81,7 +81,11 @@
     letter-spacing: 0.6px;
     text-transform: uppercase;
     margin-bottom: 5px;
+    outline: none;
+    word-break: break-word;
   }
+  .section-title.placeholder::before { content: '제목'; color: #3a3a3a; text-transform: none; }
+  .section-title:focus { background: rgba(58,90,122,0.06); }
   .section-title-row {
     display: flex;
     align-items: center;
@@ -102,9 +106,12 @@
   .progress-section { display: flex; flex-direction: column; gap: 5px; }
   .progress-cat-row { display: flex; align-items: center; gap: 6px; }
   .progress-cat-label {
-    width: 32px; flex-shrink: 0;
+    width: 40px; flex-shrink: 0;
     font-size: 13px; font-weight: 600; color: #ccc;
+    outline: none; word-break: break-word;
   }
+  .progress-cat-label.placeholder::before { content: '제목'; color: #3a3a3a; }
+  .progress-cat-label:focus { background: rgba(58,90,122,0.06); }
   .progress-cards {
     flex: 1; display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -143,10 +150,12 @@
   }
   .quick-row:last-child { border-bottom: none; }
   .quick-label {
-    flex-shrink: 0; width: 78px; font-size: 13px;
+    flex-shrink: 0; width: 86px; font-size: 13px;
     font-weight: 500; color: #888; padding-top: 1px;
-    white-space: nowrap;
+    outline: none; white-space: pre-wrap; word-break: break-word;
   }
+  .quick-label.placeholder::before { content: '제목'; color: #3a3a3a; }
+  .quick-label:focus { background: rgba(58,90,122,0.06); }
   .quick-text {
     flex: 1; font-size: 14px; color: #ddd;
     min-height: 18px; outline: none;
@@ -344,7 +353,7 @@
 
   <!-- 26년 성장 진행률 -->
   <div class="section">
-    <div class="section-title">26년 성장 진행률</div>
+    <div class="section-title" id="text_title_progress" contenteditable="true" spellcheck="false"></div>
     <div class="progress-section" id="progressSection"></div>
   </div>
 
@@ -352,19 +361,19 @@
   <div class="section">
     <div class="quick-box">
       <div class="quick-row">
-        <span class="quick-label">오늘할거</span>
+        <div class="quick-label" id="text_label_today" contenteditable="true" spellcheck="false"></div>
         <div class="quick-text" id="text_today" contenteditable="true" spellcheck="false"></div>
       </div>
       <div class="quick-row">
-        <span class="quick-label">이번주할거</span>
+        <div class="quick-label" id="text_label_week" contenteditable="true" spellcheck="false"></div>
         <div class="quick-text" id="text_week" contenteditable="true" spellcheck="false"></div>
       </div>
       <div class="quick-row">
-        <span class="quick-label">일년목표 증명해</span>
+        <div class="quick-label" id="text_label_year" contenteditable="true" spellcheck="false"></div>
         <div class="quick-text" id="text_year" contenteditable="true" spellcheck="false"></div>
       </div>
       <div class="quick-row">
-        <span class="quick-label">루틴</span>
+        <div class="quick-label" id="text_label_routine" contenteditable="true" spellcheck="false"></div>
         <div class="quick-text" id="text_routine" contenteditable="true" spellcheck="false"></div>
       </div>
     </div>
@@ -373,7 +382,7 @@
   <!-- 운동루틴 -->
   <div class="section">
     <div class="section-title-row">
-      <div class="section-title">운동루틴</div>
+      <div class="section-title" id="text_title_exercise" contenteditable="true" spellcheck="false"></div>
     </div>
     <div class="routine-list" id="list_exercise"></div>
   </div>
@@ -381,7 +390,7 @@
   <!-- 공부루틴 -->
   <div class="section">
     <div class="section-title-row">
-      <div class="section-title">공부루틴</div>
+      <div class="section-title" id="text_title_study" contenteditable="true" spellcheck="false"></div>
     </div>
     <div class="routine-list" id="list_study"></div>
   </div>
@@ -389,7 +398,7 @@
   <!-- 돈벌자루틴 -->
   <div class="section">
     <div class="section-title-row">
-      <div class="section-title">돈벌자루틴</div>
+      <div class="section-title" id="text_title_money" contenteditable="true" spellcheck="false"></div>
     </div>
     <div class="routine-list" id="list_money"></div>
   </div>
@@ -397,13 +406,23 @@
   <!-- 바로가기 (하위페이지) -->
   <div class="section">
     <div class="section-title-row">
-      <div class="section-title">바로가기</div>
+      <div class="section-title" id="text_title_shortcuts" contenteditable="true" spellcheck="false"></div>
       <div style="display:flex; gap:6px;">
         <button class="add-btn" onclick="addTextShortcut()">＋ 텍스트추가</button>
         <button class="add-btn" onclick="addPage()">＋ 페이지추가</button>
       </div>
     </div>
     <div class="page-list" id="pageList"></div>
+  </div>
+
+  <!-- 데이터 백업 -->
+  <div class="section">
+    <div class="section-title" id="text_title_backup" contenteditable="true" spellcheck="false"></div>
+    <div style="display:flex; gap:6px;">
+      <button class="add-btn" onclick="backupData()">⬇ 백업 다운로드</button>
+      <button class="add-btn" onclick="document.getElementById('restoreFile').click()">⬆ 백업 불러오기</button>
+      <input type="file" id="restoreFile" accept="application/json" style="display:none" onchange="restoreData(event)">
+    </div>
   </div>
 
   <!-- 페이지 상세 뷰 -->
@@ -488,6 +507,7 @@
       { key: 'month', label: '이번달' },
       { key: 'year',  label: '연간' },
     ];
+    const CAT_LABEL_KEYS = CATS.map(cat => 'catlabel_' + cat.key);
 
     // 기본 시드 (Supabase 미설정 / localStorage 비어있을 때)
     function defaultRoutines() {
@@ -533,7 +553,20 @@
 
         const label = document.createElement('div');
         label.className = 'progress-cat-label';
-        label.textContent = cat.label;
+        label.contentEditable = 'true';
+        label.spellcheck = false;
+        const labelKey = 'catlabel_' + cat.key;
+        const labelVal = texts[labelKey] !== undefined ? texts[labelKey] : cat.label;
+        label.textContent = labelVal;
+        label.classList.toggle('placeholder', !labelVal.trim());
+        label.addEventListener('focus', () => label.classList.remove('placeholder'));
+        label.addEventListener('blur', () => {
+          const v = label.textContent;
+          texts[labelKey] = v;
+          if (!v.trim()) label.classList.add('placeholder');
+          lsSet('texts', texts);
+          syncText(labelKey, v);
+        });
         row.appendChild(label);
 
         const cards = document.createElement('div');
@@ -697,8 +730,24 @@
     // ════════════════════════════════════════════════════════
     //  오늘할거 / 이번주할거 / 일년목표 / 루틴 (자유텍스트)
     // ════════════════════════════════════════════════════════
-    const TEXT_KEYS = ['title', 'today', 'week', 'year', 'routine'];
-    const TEXT_DEFAULTS = { title: '내 스케줄 대시보드' };
+    const TEXT_KEYS = [
+      'title', 'today', 'week', 'year', 'routine',
+      'label_today', 'label_week', 'label_year', 'label_routine',
+      'title_progress', 'title_exercise', 'title_study', 'title_money', 'title_shortcuts', 'title_backup'
+    ];
+    const TEXT_DEFAULTS = {
+      title: '내 스케줄 대시보드',
+      label_today: '오늘할거',
+      label_week: '이번주할거',
+      label_year: '일년목표 증명해',
+      label_routine: '루틴',
+      title_progress: '26년 성장 진행률',
+      title_exercise: '운동루틴',
+      title_study: '공부루틴',
+      title_money: '돈벌자루틴',
+      title_shortcuts: '바로가기',
+      title_backup: '데이터 백업'
+    };
     let texts = lsGet('texts', {});
 
     function applyTexts() {
@@ -1276,6 +1325,7 @@
         const map = {};
         (t.data || []).forEach(row => map[row.id] = row.content);
         TEXT_KEYS.forEach(k => { if (map[k] !== undefined) texts[k] = map[k]; });
+        CAT_LABEL_KEYS.forEach(k => { if (map[k] !== undefined) texts[k] = map[k]; });
         lsSet('texts', texts);
         if (p.data && p.data.length) { pages = p.data; lsSet('pages', pages); }
 
@@ -1296,6 +1346,119 @@
       const el = document.getElementById('headerDate');
       if (el) el.textContent = `${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일 (${days[d.getDay()]})`;
     }
+
+    // ════════════════════════════════════════════════════════
+    //  데이터 백업 / 복원
+    //  - 오늘/이번달/연간 진행률은 routineChecks(날짜별 기록)을
+    //    기준으로 매번 계산되므로, 데이터 자체는 백엔드(Supabase)와
+    //    백업 파일에 영구 누적되고, 화면의 "오늘" 수치만 날짜가
+    //    바뀌면 자동으로 0%부터 다시 계산됩니다.
+    // ════════════════════════════════════════════════════════
+    function backupData() {
+      const data = {
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        texts: lsGet('texts', {}),
+        routines: lsGet('routines', []),
+        checks: lsGet('checks', []),
+        pages: lsGet('pages', []),
+      };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `schedule_backup_${todayStr()}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    async function syncAllToSupabase() {
+      // dashboard_texts: 전체 upsert
+      const textRows = Object.keys(texts).map(k => ({ id: k, content: texts[k] }));
+      if (textRows.length) await db.from('dashboard_texts').upsert(textRows);
+
+      // pages: 전체 교체
+      await db.from('pages').delete().gte('id', 0);
+      if (pages.length) {
+        const insertPages = pages.map(({ id, ...rest }) => rest);
+        const { data, error } = await db.from('pages').insert(insertPages).select();
+        if (!error && data) { pages = data; lsSet('pages', pages); }
+      }
+
+      // routines + routine_checks: 전체 교체 (id 매핑)
+      await db.from('routine_checks').delete().gte('routine_id', 0);
+      await db.from('routines').delete().gte('id', 0);
+      const idMap = {};
+      if (routines.length) {
+        const insertRoutines = routines.map(({ id, ...rest }) => rest);
+        const { data, error } = await db.from('routines').insert(insertRoutines).select();
+        if (!error && data) {
+          routines.forEach((old, i) => { idMap[old.id] = data[i].id; });
+          routines = data;
+          lsSet('routines', routines);
+        }
+      }
+      if (routineChecks.length) {
+        const insertChecks = routineChecks
+          .map(c => ({ routine_id: idMap[c.routine_id] !== undefined ? idMap[c.routine_id] : c.routine_id, check_date: c.check_date }))
+          .filter(c => typeof c.routine_id === 'number');
+        if (insertChecks.length) await db.from('routine_checks').insert(insertChecks);
+      }
+    }
+
+    async function restoreData(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      if (!confirm('백업 파일을 불러오면 현재 데이터를 덮어씁니다. 계속할까요?')) {
+        event.target.value = '';
+        return;
+      }
+      try {
+        const text = await file.text();
+        const data = JSON.parse(text);
+
+        if (data.texts) { texts = data.texts; lsSet('texts', texts); }
+        if (data.routines) { routines = data.routines; lsSet('routines', routines); }
+        if (data.checks) { routineChecks = data.checks; lsSet('checks', routineChecks); }
+        if (data.pages) { pages = data.pages; lsSet('pages', pages); }
+
+        renderProgress();
+        renderRoutines();
+        applyTexts();
+        renderPages();
+
+        if (SUPA_READY) {
+          setStatus('saving');
+          await syncAllToSupabase();
+          setStatus('saved');
+        } else {
+          setStatus('local');
+        }
+        alert('복원이 완료되었습니다.');
+      } catch (e) {
+        console.error('복원 실패:', e);
+        alert('백업 파일을 읽을 수 없습니다.');
+      } finally {
+        event.target.value = '';
+      }
+    }
+
+    // ════════════════════════════════════════════════════════
+    //  날짜가 바뀌면 "오늘" 체크박스 / 진행률 자동 새로고침
+    //  (페이지를 새로고침하지 않고 자정을 넘긴 경우 대응)
+    // ════════════════════════════════════════════════════════
+    let __lastDateStr = todayStr();
+    setInterval(() => {
+      const now = todayStr();
+      if (now !== __lastDateStr) {
+        __lastDateStr = now;
+        renderHeaderDate();
+        renderProgress();
+        renderRoutines();
+      }
+    }, 60 * 1000);
 
     function init() {
       // Supabase 연결 여부와 상관없이 먼저 화면을 그린다
