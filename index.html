@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>내 스케줄 대시보드</title>
+
+<!-- PWA / 홈 화면 앱 설정 -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="내대시보드">
+<meta name="theme-color" content="#141414">
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
+    font-size: 13px;
+    background: #141414;
+    color: #e2e2e2;
+    padding: 14px;
+    line-height: 1.4;
+  }
+
+  /* ── Header ── */
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .header h1 { font-size: 15px; font-weight: 500; color: #e8e8e8; }
+  .save-status { font-size: 10px; color: #555; transition: color 0.3s; }
+  .save-status.saving { color: #888; }
+  .save-status.saved  { color: #5a9e4a; }
+  .save-status.error  { color: #d95a5a; }
+
+  /* ── Section ── */
+  .section { margin-bottom: 12px; }
+  .section-title {
+    font-size: 10px;
+    font-weight: 500;
+    color: #777;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+  }
+  .section-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 5px;
+  }
+  .section-title-row .section-title { margin-bottom: 0; }
+
+  .add-btn {
+    font-size: 10px; font-family: inherit;
+    background: none; border: 0.5px solid #333;
+    border-radius: 4px; color: #777;
+    padding: 2px 8px; cursor: pointer;
+  }
+  .add-btn:hover { border-color: #555; color: #aaa; }
+
+  /* ── 진행률 ── */
+  .progress-section { display: flex; flex-direction: column; gap: 5px; }
+  .progress-cat-row { display: flex; align-items: center; gap: 6px; }
+  .progress-cat-label {
+    width: 32px; flex-shrink: 0;
+    font-size: 11px; font-weight: 600; color: #ccc;
+  }
+  .progress-cards {
+    flex: 1; display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 5px;
+  }
+  .progress-card {
+    background: #1c1c1c; border: 0.5px solid #2a2a2a;
+    border-radius: 5px; padding: 3px 6px;
+  }
+  .progress-card-top {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 3px;
+  }
+  .progress-card-label { font-size: 8px; color: #777; letter-spacing: 0.3px; }
+  .progress-card-pct { font-size: 11px; font-weight: 600; color: #ddd; }
+  .progress-bar-bg {
+    height: 4px; background: #2e2e2e;
+    border-radius: 2px; overflow: hidden;
+  }
+  .progress-bar-fill {
+    height: 100%; background: #4a8ac4; border-radius: 2px;
+    transition: width 0.3s;
+  }
+
+  /* ── 빠른 입력 (오늘할거/이번주할거/일년목표/루틴) ── */
+  .quick-box {
+    background: #1a1a1a;
+    border: 0.5px solid #2a2a2a;
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .quick-row {
+    display: flex; align-items: flex-start; gap: 8px;
+    padding: 6px 10px;
+    border-bottom: 0.5px solid #242424;
+  }
+  .quick-row:last-child { border-bottom: none; }
+  .quick-label {
+    flex-shrink: 0; width: 78px; font-size: 11px;
+    font-weight: 500; color: #888; padding-top: 1px;
+    white-space: nowrap;
+  }
+  .quick-text {
+    flex: 1; font-size: 12px; color: #ddd;
+    min-height: 18px; outline: none;
+    white-space: pre-wrap; word-break: break-word;
+  }
+  .quick-text.placeholder::before { content: '입력...'; color: #3a3a3a; }
+  .quick-text:focus { background: rgba(58,90,122,0.06); }
+
+  /* ── 루틴 체크리스트 ── */
+  .routine-list {
+    background: #1a1a1a;
+    border: 0.5px solid #2a2a2a;
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .routine-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 5px 10px;
+    border-bottom: 0.5px solid #242424;
+  }
+  .routine-item:last-child { border-bottom: none; }
+  .routine-checkbox {
+    width: 16px; height: 16px; flex-shrink: 0;
+    accent-color: #4a8ac4; cursor: pointer;
+  }
+  .routine-text {
+    flex: 1; font-size: 12px; color: #ddd; outline: none;
+    white-space: pre-wrap; word-break: break-word; min-height: 16px;
+  }
+  .routine-text.placeholder::before { content: '항목 입력...'; color: #3a3a3a; }
+  .routine-text:focus { background: rgba(58,90,122,0.06); }
+  .routine-del {
+    background: none; border: none; cursor: pointer;
+    color: #3a3a3a; font-size: 13px; padding: 2px 4px; flex-shrink: 0;
+  }
+  .routine-del:hover { color: #d95a5a; }
+  .add-item-row { padding: 5px 10px; }
+  .add-item-btn {
+    font-size: 10px; color: #666; background: none;
+    border: 0.5px dashed #333; border-radius: 4px;
+    padding: 3px 10px; cursor: pointer; font-family: inherit;
+  }
+  .add-item-btn:hover { color: #aaa; border-color: #555; }
+
+  /* ── 바로가기(하위페이지) ── */
+  .page-list { display: flex; flex-direction: column; gap: 5px; }
+  .page-list-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 12px; background: #1a1a1a;
+    border: 0.5px solid #2a2a2a; border-radius: 6px;
+    font-size: 12px; color: #ddd; cursor: pointer;
+  }
+  .page-list-item:active { background: #232323; }
+  .page-arrow { color: #555; font-size: 13px; }
+
+  /* ── 페이지 상세 뷰 ── */
+  .page-view {
+    display: none;
+    position: fixed; inset: 0;
+    background: #141414; z-index: 500;
+    padding: 14px; overflow-y: auto;
+  }
+  .page-view.on { display: block; }
+  .page-view-header {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 10px;
+  }
+  .pv-btn {
+    background: none; border: 0.5px solid #333; border-radius: 4px;
+    color: #999; font-size: 11px; padding: 5px 10px;
+    cursor: pointer; font-family: inherit; flex-shrink: 0;
+  }
+  .pv-btn:hover { border-color: #555; color: #ccc; }
+  .pv-btn.del:hover { color: #d95a5a; border-color: #d95a5a; }
+  .page-view-title {
+    flex: 1; font-size: 14px; font-weight: 500; color: #eee;
+    outline: none; padding: 5px 6px; border-radius: 4px;
+    white-space: pre-wrap; word-break: break-word;
+  }
+  .page-view-title:focus { background: rgba(58,90,122,0.08); }
+
+  .page-content {
+    min-height: 200px; font-size: 13px; color: #ccc;
+    line-height: 1.7; outline: none; white-space: pre-wrap;
+    word-break: break-word; padding: 4px 2px;
+  }
+  .page-content:empty::before {
+    content: '텍스트나 이미지를 붙여넣으세요 (Cmd/Ctrl+V)';
+    color: #3a3a3a;
+  }
+  .page-content img {
+    max-width: 100%; border-radius: 6px;
+    margin: 6px 0; display: block; cursor: pointer;
+  }
+
+  /* ── 라이트박스 ── */
+  .lightbox {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.88); z-index: 9999;
+    align-items: center; justify-content: center; cursor: zoom-out;
+  }
+  .lightbox.on { display: flex; }
+  .lightbox img { max-width: 92vw; max-height: 92vh; border-radius: 4px; object-fit: contain; }
+
+  @media (max-width: 640px) {
+    body { padding: 10px; }
+    .quick-label { width: 64px; font-size: 10px; }
+  }
+</style>
+</head>
+<body>
+
+  <div class="header">
+    <h1>내 스케줄 대시보드</h1>
+    <span class="save-status" id="saveStatus">● 로딩 중...</span>
+  </div>
+
+  <!-- 26년 성장 진행률 -->
+  <div class="section">
+    <div class="section-title">26년 성장 진행률</div>
+    <div class="progress-section" id="progressSection"></div>
+  </div>
+
+  <!-- 오늘할거 / 이번주할거 / 일년목표 / 루틴 -->
+  <div class="section">
+    <div class="quick-box">
+      <div class="quick-row">
+        <span class="quick-label">오늘할거</span>
+        <div class="quick-text" id="text_today" contenteditable="true" spellcheck="false"></div>
+      </div>
+      <div class="quick-row">
+        <span class="quick-label">이번주할거</span>
+        <div class="quick-text" id="text_week" contenteditable="true" spellcheck="false"></div>
+      </div>
+      <div class="quick-row">
+        <span class="quick-label">일년목표 증명해</span>
+        <div class="quick-text" id="text_year" contenteditable="true" spellcheck="false"></div>
+      </div>
+      <div class="quick-row">
+        <span class="quick-label">루틴</span>
+        <div class="quick-text" id="text_routine" contenteditable="true" spellcheck="false"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 운동루틴 -->
+  <div class="section">
+    <div class="section-title-row">
+      <div class="section-title">운동루틴</div>
+    </div>
+    <div class="routine-list" id="list_exercise"></div>
+  </div>
+
+  <!-- 공부루틴 -->
+  <div class="section">
+    <div class="section-title-row">
+      <div class="section-title">공부루틴</div>
+    </div>
+    <div class="routine-list" id="list_study"></div>
+  </div>
+
+  <!-- 돈벌자루틴 -->
+  <div class="section">
+    <div class="section-title-row">
+      <div class="section-title">돈벌자루틴</div>
+    </div>
+    <div class="routine-list" id="list_money"></div>
+  </div>
+
+  <!-- 바로가기 (하위페이지) -->
+  <div class="section">
+    <div class="section-title-row">
+      <div class="section-title">바로가기</div>
+      <button class="add-btn" onclick="addPage()">＋ 페이지추가</button>
+    </div>
+    <div class="page-list" id="pageList"></div>
+  </div>
+
+  <!-- 페이지 상세 뷰 -->
+  <div class="page-view" id="pageView">
+    <div class="page-view-header">
+      <button class="pv-btn" onclick="closePage()">← 뒤로</button>
+      <div class="page-view-title" id="pageViewTitle" contenteditable="true" spellcheck="false"></div>
+      <button class="pv-btn del" onclick="deleteCurrentPage()">삭제</button>
+    </div>
+    <div class="page-content" id="pageContent" contenteditable="true" spellcheck="false"></div>
+  </div>
+
+  <!-- 라이트박스 -->
+  <div class="lightbox" id="lightbox" onclick="document.getElementById('lightbox').classList.remove('on')">
+    <img id="lightboxImg" src="">
+  </div>
+
+  <!-- Supabase SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <script>
+    // ════════════════════════════════════════════════════════
+    //  Supabase 초기화 — 본인 프로젝트의 URL / anon key로 교체하세요
+    //  설정 전에도 이 기기의 localStorage에 모든 내용이 저장되어
+    //  체크박스/텍스트/페이지를 바로 사용할 수 있습니다.
+    // ════════════════════════════════════════════════════════
+    const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+    const SUPABASE_KEY = 'YOUR_SUPABASE_ANON_KEY';
+    const SUPA_READY = /^https?:\/\//.test(SUPABASE_URL) && SUPABASE_KEY !== 'YOUR_SUPABASE_ANON_KEY';
+    let db = null;
+    if (SUPA_READY) {
+      try {
+        const { createClient } = supabase;
+        db = createClient(SUPABASE_URL, SUPABASE_KEY);
+      } catch (e) { console.error('Supabase 초기화 실패:', e); }
+    }
+
+    function setStatus(state) {
+      const el = document.getElementById('saveStatus');
+      if (state === 'saving') { el.textContent = '● 저장 중...'; el.className = 'save-status saving'; }
+      if (state === 'saved')  { el.textContent = '● 저장됨';    el.className = 'save-status saved'; }
+      if (state === 'error')  { el.textContent = '● 저장 실패 (Supabase 확인)'; el.className = 'save-status error'; }
+      if (state === 'local')  { el.textContent = '● 이 기기에 저장됨 (Supabase 미설정)'; el.className = 'save-status saving'; }
+    }
+
+    // ── localStorage 헬퍼 (Supabase 미설정 시 / 오프라인 캐시) ──
+    const LS_PREFIX = 'mydash_';
+    function lsGet(key, fallback) {
+      try {
+        const v = localStorage.getItem(LS_PREFIX + key);
+        return v !== null ? JSON.parse(v) : fallback;
+      } catch (e) { return fallback; }
+    }
+    function lsSet(key, val) {
+      try { localStorage.setItem(LS_PREFIX + key, JSON.stringify(val)); } catch (e) {}
+    }
+    function uid() { return 'l' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+    function isRemoteId(id) { return typeof id === 'number'; }
+
+    // ── 날짜 헬퍼 ──
+    function todayStr() {
+      const d = new Date();
+      const m = String(d.getMonth()+1).padStart(2,'0');
+      const day = String(d.getDate()).padStart(2,'0');
+      return `${d.getFullYear()}-${m}-${day}`;
+    }
+    function dayOfYear(d) {
+      const start = new Date(d.getFullYear(), 0, 1);
+      return Math.floor((d - start) / 86400000) + 1;
+    }
+
+    // ════════════════════════════════════════════════════════
+    //  26년 성장 진행률
+    // ════════════════════════════════════════════════════════
+    const CATS = [
+      { key: 'exercise', label: '운동' },
+      { key: 'study',    label: '공부' },
+      { key: 'money',    label: '돈벌자' },
+    ];
+    const PERIODS = [
+      { key: 'today', label: '오늘' },
+      { key: 'month', label: '이번달' },
+      { key: 'year',  label: '연간' },
+    ];
+
+    // 기본 시드 (Supabase 미설정 / localStorage 비어있을 때)
+    function defaultRoutines() {
+      const mk = (category, n) => Array.from({ length: n }, (_, i) => ({ id: uid(), category, label: '', sort_order: i }));
+      return [...mk('exercise', 5), ...mk('study', 4), ...mk('money', 3)];
+    }
+
+    let routines = lsGet('routines', null) || defaultRoutines();       // {id, category, label, sort_order}
+    let routineChecks = lsGet('checks', []);                            // {routine_id, check_date}
+
+    function calcProgress(category) {
+      const items = routines.filter(r => r.category === category);
+      const N = items.length;
+      if (N === 0) return { today: 0, month: 0, year: 0 };
+      const ids = new Set(items.map(r => r.id));
+      const now = new Date();
+      const ts = todayStr();
+      const monthPrefix = ts.slice(0, 7);
+      const yearPrefix = ts.slice(0, 4);
+      let todayCnt = 0, monthCnt = 0, yearCnt = 0;
+      routineChecks.forEach(c => {
+        if (!ids.has(c.routine_id)) return;
+        if (c.check_date === ts) todayCnt++;
+        if (c.check_date.slice(0, 7) === monthPrefix) monthCnt++;
+        if (c.check_date.slice(0, 4) === yearPrefix) yearCnt++;
+      });
+      const daysInMonth = now.getDate();
+      const doy = dayOfYear(now);
+      return {
+        today: (todayCnt / N) * 100,
+        month: Math.min(100, (monthCnt / (N * daysInMonth)) * 100),
+        year:  Math.min(100, (yearCnt  / (N * doy)) * 100),
+      };
+    }
+
+    function renderProgress() {
+      const wrap = document.getElementById('progressSection');
+      wrap.innerHTML = '';
+      CATS.forEach(cat => {
+        const pct = calcProgress(cat.key);
+        const row = document.createElement('div');
+        row.className = 'progress-cat-row';
+
+        const label = document.createElement('div');
+        label.className = 'progress-cat-label';
+        label.textContent = cat.label;
+        row.appendChild(label);
+
+        const cards = document.createElement('div');
+        cards.className = 'progress-cards';
+        PERIODS.forEach(p => {
+          const v = Math.round(pct[p.key]);
+          const card = document.createElement('div');
+          card.className = 'progress-card';
+          card.innerHTML = `<div class="progress-card-top"><span class="progress-card-label">${p.label}</span><span class="progress-card-pct">${v}%</span></div><div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${v}%"></div></div>`;
+          cards.appendChild(card);
+        });
+        row.appendChild(cards);
+        wrap.appendChild(row);
+      });
+    }
+
+    // ════════════════════════════════════════════════════════
+    //  루틴 체크리스트
+    // ════════════════════════════════════════════════════════
+    function renderRoutines() {
+      CATS.forEach(cat => {
+        const list = document.getElementById('list_' + cat.key);
+        list.innerHTML = '';
+        const items = routines.filter(r => r.category === cat.key)
+                               .sort((a, b) => a.sort_order - b.sort_order);
+        items.forEach(item => {
+          const row = document.createElement('div');
+          row.className = 'routine-item';
+
+          const cb = document.createElement('input');
+          cb.type = 'checkbox';
+          cb.className = 'routine-checkbox';
+          cb.checked = routineChecks.some(c => c.routine_id === item.id && c.check_date === todayStr());
+          cb.addEventListener('change', () => toggleCheck(item.id, cb.checked));
+
+          const txt = document.createElement('div');
+          txt.className = 'routine-text';
+          txt.contentEditable = 'true';
+          txt.spellcheck = false;
+          txt.textContent = item.label || '';
+          if (!item.label) txt.classList.add('placeholder');
+          txt.addEventListener('focus', () => txt.classList.remove('placeholder'));
+          txt.addEventListener('blur', () => {
+            const val = txt.textContent.trim();
+            if (!val) txt.classList.add('placeholder');
+            saveRoutineLabel(item, val);
+          });
+
+          const del = document.createElement('button');
+          del.className = 'routine-del';
+          del.textContent = '✕';
+          del.onclick = () => deleteRoutine(item.id, cat.key);
+
+          row.appendChild(cb);
+          row.appendChild(txt);
+          row.appendChild(del);
+          list.appendChild(row);
+        });
+
+        // 항목 추가 버튼
+        const addRow = document.createElement('div');
+        addRow.className = 'add-item-row';
+        const addBtn = document.createElement('button');
+        addBtn.className = 'add-item-btn';
+        addBtn.textContent = '＋ 항목추가';
+        addBtn.onclick = () => addRoutine(cat.key);
+        addRow.appendChild(addBtn);
+        list.appendChild(addRow);
+      });
+    }
+
+    async function toggleCheck(routineId, isChecked) {
+      const ts = todayStr();
+      if (isChecked) {
+        if (!routineChecks.some(c => c.routine_id === routineId && c.check_date === ts)) {
+          routineChecks.push({ routine_id: routineId, check_date: ts });
+        }
+      } else {
+        routineChecks = routineChecks.filter(c => !(c.routine_id === routineId && c.check_date === ts));
+      }
+      lsSet('checks', routineChecks);
+      renderProgress();
+
+      if (SUPA_READY && isRemoteId(routineId)) {
+        setStatus('saving');
+        try {
+          if (isChecked) {
+            const { error } = await db.from('routine_checks').insert({ routine_id: routineId, check_date: ts });
+            setStatus(error ? 'error' : 'saved');
+          } else {
+            const { error } = await db.from('routine_checks').delete()
+              .eq('routine_id', routineId).eq('check_date', ts);
+            setStatus(error ? 'error' : 'saved');
+          }
+        } catch (e) { console.error(e); setStatus('error'); }
+      } else {
+        setStatus(SUPA_READY ? 'saved' : 'local');
+      }
+    }
+
+    async function saveRoutineLabel(item, text) {
+      item.label = text;
+      lsSet('routines', routines);
+      if (SUPA_READY && isRemoteId(item.id)) {
+        setStatus('saving');
+        try {
+          const { error } = await db.from('routines').update({ label: text }).eq('id', item.id);
+          setStatus(error ? 'error' : 'saved');
+        } catch (e) { console.error(e); setStatus('error'); }
+      } else {
+        setStatus(SUPA_READY ? 'saved' : 'local');
+      }
+    }
+
+    async function addRoutine(category) {
+      const items = routines.filter(r => r.category === category);
+      const order = items.length ? Math.max(...items.map(r => r.sort_order)) + 1 : 0;
+      if (SUPA_READY) {
+        setStatus('saving');
+        try {
+          const { data, error } = await db.from('routines')
+            .insert({ category, label: '', sort_order: order }).select().single();
+          if (error) throw error;
+          routines.push(data);
+          setStatus('saved');
+        } catch (e) {
+          console.error(e);
+          routines.push({ id: uid(), category, label: '', sort_order: order });
+          setStatus('error');
+        }
+      } else {
+        routines.push({ id: uid(), category, label: '', sort_order: order });
+        setStatus('local');
+      }
+      lsSet('routines', routines);
+      renderRoutines();
+      renderProgress();
+    }
+
+    async function deleteRoutine(id, category) {
+      if (!confirm('이 항목을 삭제할까요?')) return;
+      routines = routines.filter(r => r.id !== id);
+      routineChecks = routineChecks.filter(c => c.routine_id !== id);
+      lsSet('routines', routines);
+      lsSet('checks', routineChecks);
+      renderRoutines();
+      renderProgress();
+
+      if (SUPA_READY && isRemoteId(id)) {
+        setStatus('saving');
+        try {
+          await db.from('routine_checks').delete().eq('routine_id', id);
+          const { error } = await db.from('routines').delete().eq('id', id);
+          setStatus(error ? 'error' : 'saved');
+        } catch (e) { console.error(e); setStatus('error'); }
+      } else {
+        setStatus(SUPA_READY ? 'saved' : 'local');
+      }
+    }
+
+    // ════════════════════════════════════════════════════════
+    //  오늘할거 / 이번주할거 / 일년목표 / 루틴 (자유텍스트)
+    // ════════════════════════════════════════════════════════
+    const TEXT_KEYS = ['today', 'week', 'year', 'routine'];
+    let texts = lsGet('texts', {});
+
+    function applyTexts() {
+      TEXT_KEYS.forEach(key => {
+        const el = document.getElementById('text_' + key);
+        const val = texts[key] || '';
+        el.textContent = val;
+        el.classList.toggle('placeholder', !val.trim());
+      });
+    }
+
+    function bindTexts() {
+      TEXT_KEYS.forEach(key => {
+        const el = document.getElementById('text_' + key);
+        el.addEventListener('focus', () => el.classList.remove('placeholder'));
+        el.addEventListener('blur', () => {
+          const val = el.textContent;
+          texts[key] = val;
+          if (!val.trim()) el.classList.add('placeholder');
+          lsSet('texts', texts);
+          syncText(key, val);
+        });
+      });
+    }
+
+    async function syncText(key, val) {
+      if (!SUPA_READY) { setStatus('local'); return; }
+      setStatus('saving');
+      try {
+        const { error } = await db.from('dashboard_texts').upsert({ id: key, content: val });
+        setStatus(error ? 'error' : 'saved');
+      } catch (e) { console.error(e); setStatus('error'); }
+    }
+
+
+    // ════════════════════════════════════════════════════════
+    //  바로가기 (하위페이지)
+    // ════════════════════════════════════════════════════════
+    function defaultPages() {
+      const titles = ['가봐야할곳', '가볼곳,읽을책,볼영화', '사고싶은거', '다음에 살 집 구상', '송파여성직업', '보험사와협상대본', '명언', '오빠나 건강체크', '골프방법'];
+      return titles.map((t, i) => ({ id: uid(), title: t, content: '', sort_order: i }));
+    }
+
+    let pages = lsGet('pages', null) || defaultPages();
+    let currentPageId = null;
+
+    function renderPages() {
+      const wrap = document.getElementById('pageList');
+      wrap.innerHTML = '';
+      pages.forEach(p => {
+        const row = document.createElement('div');
+        row.className = 'page-list-item';
+        const span = document.createElement('span');
+        span.textContent = p.title || '(제목없음)';
+        const arrow = document.createElement('span');
+        arrow.className = 'page-arrow';
+        arrow.textContent = '›';
+        row.appendChild(span);
+        row.appendChild(arrow);
+        row.onclick = () => openPage(p.id);
+        wrap.appendChild(row);
+      });
+    }
+
+    async function addPage() {
+      const title = prompt('페이지 제목을 입력하세요:');
+      if (!title || !title.trim()) return;
+      const order = pages.length;
+      if (SUPA_READY) {
+        setStatus('saving');
+        try {
+          const { data, error } = await db.from('pages')
+            .insert({ title: title.trim(), content: '', sort_order: order }).select().single();
+          if (error) throw error;
+          pages.push(data);
+          setStatus('saved');
+        } catch (e) {
+          console.error(e);
+          pages.push({ id: uid(), title: title.trim(), content: '', sort_order: order });
+          setStatus('error');
+        }
+      } else {
+        pages.push({ id: uid(), title: title.trim(), content: '', sort_order: order });
+        setStatus('local');
+      }
+      lsSet('pages', pages);
+      renderPages();
+    }
+
+    function openPage(id) {
+      const p = pages.find(x => x.id === id);
+      if (!p) return;
+      currentPageId = id;
+      document.getElementById('pageViewTitle').textContent = p.title || '';
+      document.getElementById('pageContent').innerHTML = p.content || '';
+      reattachPageImgs();
+      document.getElementById('pageView').classList.add('on');
+      window.scrollTo({ top: 0 });
+    }
+
+    function closePage() {
+      document.getElementById('pageView').classList.remove('on');
+      currentPageId = null;
+    }
+
+    async function savePageTitle() {
+      if (currentPageId == null) return;
+      const title = document.getElementById('pageViewTitle').textContent.trim();
+      const p = pages.find(x => x.id === currentPageId);
+      if (!p) return;
+      p.title = title;
+      lsSet('pages', pages);
+      renderPages();
+      if (SUPA_READY && isRemoteId(currentPageId)) {
+        setStatus('saving');
+        try {
+          const { error } = await db.from('pages').update({ title }).eq('id', currentPageId);
+          setStatus(error ? 'error' : 'saved');
+        } catch (e) { console.error(e); setStatus('error'); }
+      } else {
+        setStatus(SUPA_READY ? 'saved' : 'local');
+      }
+    }
+
+    async function savePageContent() {
+      if (currentPageId == null) return;
+      const html = document.getElementById('pageContent').innerHTML;
+      const p = pages.find(x => x.id === currentPageId);
+      if (!p) return;
+      p.content = html;
+      lsSet('pages', pages);
+      if (SUPA_READY && isRemoteId(currentPageId)) {
+        setStatus('saving');
+        try {
+          const { error } = await db.from('pages').update({ content: html }).eq('id', currentPageId);
+          setStatus(error ? 'error' : 'saved');
+        } catch (e) { console.error(e); setStatus('error'); }
+      } else {
+        setStatus(SUPA_READY ? 'saved' : 'local');
+      }
+    }
+
+    async function deleteCurrentPage() {
+      if (currentPageId == null) return;
+      if (!confirm('이 페이지를 삭제할까요? 페이지 안의 이미지도 함께 삭제됩니다.')) return;
+      const p = pages.find(x => x.id === currentPageId);
+
+      if (SUPA_READY && isRemoteId(currentPageId)) {
+        setStatus('saving');
+        try {
+          // 페이지 내 이미지 삭제
+          const tmp = document.createElement('div');
+          tmp.innerHTML = p?.content || '';
+          const imgs = [...tmp.querySelectorAll('img')];
+          await Promise.all(imgs.map(img => deleteStorageImg(img.src)));
+
+          const { error } = await db.from('pages').delete().eq('id', currentPageId);
+          if (error) throw error;
+          setStatus('saved');
+        } catch (e) { console.error(e); setStatus('error'); }
+      } else {
+        setStatus(SUPA_READY ? 'saved' : 'local');
+      }
+      pages = pages.filter(x => x.id !== currentPageId);
+      lsSet('pages', pages);
+      closePage();
+      renderPages();
+    }
+
+    document.getElementById('pageViewTitle').addEventListener('blur', savePageTitle);
+    document.getElementById('pageContent').addEventListener('blur', savePageContent);
+
+    // ── 이미지 업로드 / 삭제 (Supabase Storage: dashboard_images 버킷, 미설정 시 base64로 대체) ──
+    function compressToBlob(blob) {
+      return new Promise(resolve => {
+        const url = URL.createObjectURL(blob);
+        const tmp = new Image();
+        tmp.onload = () => {
+          const MAX = 1200;
+          let w = tmp.width, h = tmp.height;
+          if (w > MAX || h > MAX) {
+            if (w >= h) { h = Math.round(h * MAX / w); w = MAX; }
+            else        { w = Math.round(w * MAX / h); h = MAX; }
+          }
+          const c = document.createElement('canvas');
+          c.width = w; c.height = h;
+          c.getContext('2d').drawImage(tmp, 0, 0, w, h);
+          URL.revokeObjectURL(url);
+          c.toBlob(b => resolve(b), 'image/jpeg', 0.85);
+        };
+        tmp.src = url;
+      });
+    }
+
+    function blobToDataUrl(blob) {
+      return new Promise(resolve => {
+        const fr = new FileReader();
+        fr.onload = () => resolve(fr.result);
+        fr.readAsDataURL(blob);
+      });
+    }
+
+    async function uploadImage(blob) {
+      const compressed = await compressToBlob(blob);
+      if (SUPA_READY) {
+        try {
+          const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.jpg`;
+          const { data, error } = await db.storage.from('dashboard_images')
+            .upload(fileName, compressed, { contentType: 'image/jpeg' });
+          if (error) throw error;
+          return db.storage.from('dashboard_images').getPublicUrl(data.path).data.publicUrl;
+        } catch (e) {
+          console.warn('Storage 업로드 실패, 이 기기에만 저장합니다:', e);
+        }
+      }
+      return blobToDataUrl(compressed);
+    }
+
+    async function deleteStorageImg(src) {
+      if (!src || !src.includes('/dashboard_images/')) return;
+      try {
+        const path = src.split('/dashboard_images/')[1].split('?')[0];
+        await db.storage.from('dashboard_images').remove([path]);
+      } catch (e) { console.warn('이미지 삭제 실패:', e); }
+    }
+
+    // 페이지 본문에 이미지 붙여넣기
+    document.getElementById('pageContent').addEventListener('paste', async e => {
+      const imgItem = [...(e.clipboardData?.items || [])].find(it => it.type.startsWith('image/'));
+      if (!imgItem) return;
+      e.preventDefault();
+      setStatus('saving');
+      try {
+        const url = await uploadImage(imgItem.getAsFile());
+        const img = document.createElement('img');
+        img.src = url;
+        registerPageImg(img);
+        insertAtCursor(img);
+        await savePageContent();
+      } catch (err) { console.error(err); setStatus('error'); }
+    });
+
+    function insertAtCursor(node) {
+      const area = document.getElementById('pageContent');
+      const sel = window.getSelection();
+      if (sel?.rangeCount && area.contains(sel.getRangeAt(0).startContainer)) {
+        const r = sel.getRangeAt(0);
+        r.deleteContents();
+        const after = document.createTextNode('​');
+        r.insertNode(after);
+        r.insertNode(node);
+        r.setStartAfter(after);
+        r.collapse(true);
+        sel.removeAllRanges();
+        sel.addRange(r);
+      } else {
+        area.appendChild(node);
+      }
+    }
+
+    function registerPageImg(img) {
+      const openLightbox = e => {
+        e.stopPropagation(); e.preventDefault();
+        document.getElementById('lightboxImg').src = img.src;
+        document.getElementById('lightbox').classList.add('on');
+      };
+      img.addEventListener('click', openLightbox);
+    }
+
+    function reattachPageImgs() {
+      document.getElementById('pageContent').querySelectorAll('img').forEach(registerPageImg);
+    }
+
+    // ════════════════════════════════════════════════════════
+    //  초기화 — localStorage(또는 기본값)로 즉시 렌더링 후,
+    //  Supabase가 설정돼 있으면 서버 데이터로 동기화
+    // ════════════════════════════════════════════════════════
+    async function loadFromSupabase() {
+      if (!SUPA_READY) { setStatus('local'); return; }
+      setStatus('saving');
+      try {
+        const yearPrefix = todayStr().slice(0, 4);
+        const [r, c, t, p] = await Promise.all([
+          db.from('routines').select('*').order('sort_order'),
+          db.from('routine_checks').select('routine_id, check_date').gte('check_date', yearPrefix + '-01-01'),
+          db.from('dashboard_texts').select('*'),
+          db.from('pages').select('*').order('sort_order'),
+        ]);
+        if (r.error) throw r.error;
+        if (c.error) throw c.error;
+        if (t.error) throw t.error;
+        if (p.error) throw p.error;
+
+        if (r.data && r.data.length) { routines = r.data; lsSet('routines', routines); }
+        routineChecks = c.data || []; lsSet('checks', routineChecks);
+        const map = {};
+        (t.data || []).forEach(row => map[row.id] = row.content);
+        TEXT_KEYS.forEach(k => { if (map[k] !== undefined) texts[k] = map[k]; });
+        lsSet('texts', texts);
+        if (p.data && p.data.length) { pages = p.data; lsSet('pages', pages); }
+
+        renderProgress();
+        renderRoutines();
+        applyTexts();
+        renderPages();
+        setStatus('saved');
+      } catch (e) {
+        console.error('Supabase 로드 실패:', e);
+        setStatus('error');
+      }
+    }
+
+    function init() {
+      // Supabase 연결 여부와 상관없이 먼저 화면을 그린다
+      renderProgress();
+      renderRoutines();
+      applyTexts();
+      bindTexts();
+      renderPages();
+      loadFromSupabase();
+    }
+    init();
+  </script>
+</body>
+</html>
