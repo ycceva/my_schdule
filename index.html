@@ -10,6 +10,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="내대시보드">
 <meta name="theme-color" content="#141414">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
 
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -223,6 +225,17 @@
     color: #3a3a3a; font-size: 13px; padding: 2px 4px; flex-shrink: 0;
   }
   .shortcut-del:hover { color: #d95a5a; }
+  .shortcut-controls {
+    display: flex; flex-direction: column; gap: 1px;
+    flex-shrink: 0; justify-content: center;
+  }
+  .shortcut-move {
+    background: none; border: none; cursor: pointer;
+    color: #4a4a4a; font-size: 9px; padding: 1px 3px;
+    line-height: 1; font-family: inherit;
+  }
+  .shortcut-move:hover { color: #aaa; }
+  .shortcut-move:disabled { opacity: 0.2; cursor: default; }
 
   /* ── 페이지 상세 뷰 ── */
   .page-view {
@@ -263,6 +276,43 @@
     max-width: 100%; border-radius: 6px;
     margin: 6px 0; display: block; cursor: pointer;
   }
+  .img-selected { outline: 2px solid #4a8ac4; outline-offset: 1px; }
+  /* 데스크탑: 이미지 위에 떠있는 툴바 */
+  .img-toolbar {
+    position: fixed; z-index: 9999;
+    background: #222; border: 1px solid #333; border-radius: 6px;
+    display: flex; align-items: center; gap: 2px; padding: 3px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.6);
+  }
+  .img-toolbar button {
+    background: transparent; border: none; color: #aaa;
+    font-size: 11px; padding: 3px 8px; border-radius: 4px;
+    cursor: pointer; white-space: nowrap; font-family: inherit;
+  }
+  .img-toolbar button:hover { background: #333; color: #fff; }
+  .img-toolbar button.del { color: #f87171; }
+  .img-toolbar button.del:hover { background: rgba(248,113,113,0.15); }
+  /* 모바일: 화면 하단 고정 바 */
+  @media (pointer: coarse) {
+    .img-toolbar {
+      position: fixed; bottom: 0; left: 0; right: 0; top: auto !important;
+      border-radius: 12px 12px 0 0;
+      justify-content: center; gap: 8px; padding: 10px 16px;
+      padding-bottom: max(10px, env(safe-area-inset-bottom));
+    }
+    .img-toolbar button { font-size: 14px; padding: 6px 14px; }
+    .img-resize-handle { display: none !important; }
+    .img-size-btn { display: inline-flex !important; }
+  }
+  .img-resize-handle {
+    position: fixed; z-index: 10000;
+    width: 18px; height: 18px;
+    background: #3a7ac4; border: 2px solid #fff;
+    border-radius: 3px; cursor: nwse-resize;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+    touch-action: none;
+  }
+  .img-size-btn { display: none; }
 
   /* ── 라이트박스 ── */
   .lightbox {
@@ -695,10 +745,28 @@
     let pages = lsGet('pages', null) || defaultPages();
     let currentPageId = null;
 
+    function makeMoveControls(p, idx) {
+      const wrap = document.createElement('div');
+      wrap.className = 'shortcut-controls';
+      const up = document.createElement('button');
+      up.className = 'shortcut-move';
+      up.textContent = '▲';
+      up.disabled = idx === 0;
+      up.onclick = (e) => { e.stopPropagation(); moveShortcut(p.id, -1); };
+      const down = document.createElement('button');
+      down.className = 'shortcut-move';
+      down.textContent = '▼';
+      down.disabled = idx === pages.length - 1;
+      down.onclick = (e) => { e.stopPropagation(); moveShortcut(p.id, 1); };
+      wrap.appendChild(up);
+      wrap.appendChild(down);
+      return wrap;
+    }
+
     function renderPages() {
       const wrap = document.getElementById('pageList');
       wrap.innerHTML = '';
-      pages.forEach(p => {
+      pages.forEach((p, idx) => {
         if (p.type === 'text') {
           const row = document.createElement('div');
           row.className = 'shortcut-text-item';
@@ -736,6 +804,7 @@
 
           row.appendChild(title);
           row.appendChild(content);
+          row.appendChild(makeMoveControls(p, idx));
           row.appendChild(del);
           wrap.appendChild(row);
         } else {
@@ -754,6 +823,7 @@
           const arrow = document.createElement('span');
           arrow.className = 'page-arrow';
           arrow.textContent = '›';
+          right.appendChild(makeMoveControls(p, idx));
           right.appendChild(del);
           right.appendChild(arrow);
           row.appendChild(span);
@@ -762,6 +832,26 @@
           wrap.appendChild(row);
         }
       });
+    }
+
+    async function moveShortcut(id, dir) {
+      const idx = pages.findIndex(x => x.id === id);
+      const newIdx = idx + dir;
+      if (idx === -1 || newIdx < 0 || newIdx >= pages.length) return;
+      [pages[idx], pages[newIdx]] = [pages[newIdx], pages[idx]];
+      pages.forEach((p, i) => { p.sort_order = i; });
+      lsSet('pages', pages);
+      renderPages();
+      const moved = [pages[idx], pages[newIdx]].filter(p => isRemoteId(p.id));
+      if (SUPA_READY && moved.length) {
+        setStatus('saving');
+        try {
+          await Promise.all(moved.map(p => db.from('pages').update({ sort_order: p.sort_order }).eq('id', p.id)));
+          setStatus('saved');
+        } catch (e) { console.error(e); setStatus('error'); }
+      } else {
+        setStatus(SUPA_READY ? 'saved' : 'local');
+      }
     }
 
     async function saveShortcutField(item, field, val) {
@@ -1013,14 +1103,149 @@
       }
     }
 
-    function registerPageImg(img) {
+    // ── 이미지 툴바 (크게보기 / 크기조절 / 삭제) + 드래그 리사이즈 ──
+    let _imgToolbar = null, _imgHandle = null, _imgSel = null;
+
+    function closeImgUI() {
+      _imgToolbar?.remove(); _imgToolbar = null;
+      _imgHandle?.remove();  _imgHandle  = null;
+      if (_imgSel) { _imgSel.classList.remove('img-selected'); _imgSel = null; }
+    }
+
+    function placeImgUI(img) {
+      const r = img.getBoundingClientRect();
+      if (_imgToolbar) {
+        const bh = _imgToolbar.offsetHeight || 32, bw = _imgToolbar.offsetWidth || 180;
+        let top  = r.top - bh - 6; if (top < 4) top = r.bottom + 4;
+        let left = r.left;         if (left + bw > innerWidth - 4) left = innerWidth - bw - 4;
+        _imgToolbar.style.top  = top  + 'px';
+        _imgToolbar.style.left = left + 'px';
+      }
+      if (_imgHandle) {
+        _imgHandle.style.top  = (r.bottom - 7) + 'px';
+        _imgHandle.style.left = (r.right  - 7) + 'px';
+      }
+    }
+
+    function openImgUI(img, onDelete) {
+      closeImgUI();
+      _imgSel = img;
+      img.classList.add('img-selected');
+
+      const bar = document.createElement('div');
+      bar.className = 'img-toolbar';
+      _imgToolbar = bar;
+
+      const viewBtn = document.createElement('button');
+      viewBtn.textContent = '🔍 크게 보기';
+      viewBtn.onmousedown = e => e.preventDefault();
       const openLightbox = e => {
         e.stopPropagation(); e.preventDefault();
         document.getElementById('lightboxImg').src = img.src;
         document.getElementById('lightbox').classList.add('on');
+        closeImgUI();
       };
-      img.addEventListener('click', openLightbox);
+      viewBtn.onclick = openLightbox;
+      viewBtn.addEventListener('touchend', openLightbox);
+      bar.appendChild(viewBtn);
+
+      const sep0 = document.createElement('span');
+      sep0.style.cssText = 'width:1px;background:#444;margin:2px 4px;align-self:stretch;display:inline-block;';
+      sep0.className = 'img-size-btn';
+      bar.appendChild(sep0);
+
+      const mkSizeBtn = (label, delta) => {
+        const btn = document.createElement('button');
+        btn.textContent = label;
+        btn.className = 'img-size-btn';
+        btn.style.cssText = 'font-size:16px;padding:2px 8px;';
+        btn.onmousedown = e => e.preventDefault();
+        const doResize = e => {
+          e.stopPropagation(); e.preventDefault();
+          const cur = img.offsetWidth || 200;
+          img.style.width = Math.max(40, cur + delta) + 'px';
+          img.style.height = 'auto';
+          savePageContent();
+        };
+        btn.onclick = doResize;
+        btn.addEventListener('touchend', doResize);
+        bar.appendChild(btn);
+      };
+      mkSizeBtn('−', -30);
+      mkSizeBtn('＋', 30);
+
+      if (onDelete) {
+        const sep = document.createElement('span');
+        sep.style.cssText = 'width:1px;background:#444;margin:2px 4px;align-self:stretch;display:inline-block;';
+        bar.appendChild(sep);
+        const delBtn = document.createElement('button');
+        delBtn.textContent = '✕';
+        delBtn.className = 'del';
+        delBtn.onmousedown = e => e.preventDefault();
+        const doDelete = e => { e.stopPropagation(); e.preventDefault(); closeImgUI(); onDelete(img); };
+        delBtn.onclick = doDelete;
+        delBtn.addEventListener('touchend', doDelete);
+        bar.appendChild(delBtn);
+      }
+      document.body.appendChild(bar);
+
+      const handle = document.createElement('div');
+      handle.className = 'img-resize-handle';
+      _imgHandle = handle;
+      document.body.appendChild(handle);
+      requestAnimationFrame(() => placeImgUI(img));
+
+      handle.addEventListener('mousedown', ev => {
+        ev.preventDefault(); ev.stopPropagation();
+        const startX = ev.clientX, startW = img.offsetWidth || 200;
+        document.body.style.cursor = 'nwse-resize';
+        document.body.style.userSelect = 'none';
+        const onMove = mv => {
+          img.style.width = Math.max(40, startW + mv.clientX - startX) + 'px';
+          img.style.height = 'auto';
+          requestAnimationFrame(() => placeImgUI(img));
+        };
+        const onUp = () => {
+          document.body.style.cursor = document.body.style.userSelect = '';
+          document.removeEventListener('mousemove', onMove);
+          document.removeEventListener('mouseup', onUp);
+          savePageContent();
+        };
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
+      });
+
+      handle.addEventListener('touchstart', ev => {
+        ev.preventDefault(); ev.stopPropagation();
+        const t0 = ev.touches[0];
+        const startX = t0.clientX, startW = img.offsetWidth || 200;
+        const onMove = mv => {
+          const t = mv.touches[0];
+          img.style.width = Math.max(40, startW + t.clientX - startX) + 'px';
+          img.style.height = 'auto';
+          requestAnimationFrame(() => placeImgUI(img));
+        };
+        const onUp = () => {
+          document.removeEventListener('touchmove', onMove);
+          document.removeEventListener('touchend', onUp);
+          savePageContent();
+        };
+        document.addEventListener('touchmove', onMove, { passive: false });
+        document.addEventListener('touchend', onUp);
+      }, { passive: false });
     }
+
+    function registerPageImg(img) {
+      const onDelete = (im) => {
+        deleteStorageImg(im.src);
+        im.remove();
+        savePageContent();
+      };
+      img.addEventListener('click', e => { e.stopPropagation(); openImgUI(img, onDelete); });
+      img.addEventListener('touchend', e => { e.stopPropagation(); e.preventDefault(); openImgUI(img, onDelete); });
+    }
+
+    document.addEventListener('click', closeImgUI);
 
     function reattachPageImgs() {
       document.getElementById('pageContent').querySelectorAll('img').forEach(registerPageImg);
