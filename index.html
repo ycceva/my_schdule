@@ -1554,6 +1554,20 @@
       renderPages();
       loadFromSupabase();
     }
+    // ─────────────────────────────────────────────────────────
+    // 링크 탭 처리: iOS Safari에서 contenteditable 내부 <a> 링크가
+    // 클릭되지 않는 문제를 pointerdown 캡처 페이즈로 해결
+    // ─────────────────────────────────────────────────────────
+    document.addEventListener('pointerdown', function(e) {
+      const a = e.target.closest('a[href]');
+      if (!a) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const url = a.href;
+      const w = window.open(url, '_blank', 'noopener,noreferrer');
+      if (!w) { location.href = url; }
+    }, true);
+
     init();
   </script>
 </body>
