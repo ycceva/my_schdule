@@ -192,6 +192,21 @@
     color: #3a3a3a; font-size: 15px; padding: 2px 4px; flex-shrink: 0;
   }
   .routine-del:hover { color: #d95a5a; }
+  .routine-move-wrap {
+    display: flex; flex-direction: column; gap: 1px;
+    flex-shrink: 0; justify-content: center;
+  }
+  .routine-move {
+    background: none; border: none; cursor: pointer;
+    color: #4a4a4a; font-size: 11px; padding: 1px 3px;
+    line-height: 1; font-family: inherit;
+  }
+  .routine-move:hover { color: #aaa; }
+  .routine-move:disabled { opacity: 0.2; cursor: default; }
+  .routine-link {
+    color: #4a8ac4; text-decoration: underline;
+    word-break: break-all;
+  }
   .add-item-row { padding: 5px 10px; }
   .add-item-btn {
     font-size: 12px; color: #666; background: none;
@@ -586,13 +601,21 @@
     // ════════════════════════════════════════════════════════
     //  루틴 체크리스트
     // ════════════════════════════════════════════════════════
+
+    // URL을 클릭 가능한 링크로 변환
+    function linkify(text) {
+      const safe = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      return safe.replace(/(https?:\/\/[^\s]+)/g,
+        '<a href="$1" target="_blank" rel="noopener noreferrer" class="routine-link" onclick="event.stopPropagation()">$1</a>');
+    }
+
     function renderRoutines() {
       CATS.forEach(cat => {
         const list = document.getElementById('list_' + cat.key);
         list.innerHTML = '';
         const items = routines.filter(r => r.category === cat.key)
                                .sort((a, b) => a.sort_order - b.sort_order);
-        items.forEach(item => {
+        items.forEach((item, itemIdx) => {
           const row = document.createElement('div');
           row.className = 'routine-item';
 
@@ -602,18 +625,57 @@
           cb.checked = routineChecks.some(c => c.routine_id === item.id && c.check_date === todayStr());
           cb.addEventListener('change', () => toggleCheck(item.id, cb.checked));
 
+          // 텍스트: 평소엔 링크 표시(읽기모드), 탭하면 편집모드로 전환
           const txt = document.createElement('div');
           txt.className = 'routine-text';
-          txt.contentEditable = 'true';
+          txt.contentEditable = 'false';
           txt.spellcheck = false;
-          txt.textContent = item.label || '';
-          if (!item.label) txt.classList.add('placeholder');
-          txt.addEventListener('focus', () => txt.classList.remove('placeholder'));
+          if (item.label) {
+            txt.innerHTML = linkify(item.label);
+          } else {
+            txt.classList.add('placeholder');
+          }
+          txt.addEventListener('click', e => {
+            if (e.target.tagName === 'A') return; // 링크 클릭은 통과
+            txt.classList.remove('placeholder');
+            txt.contentEditable = 'true';
+            txt.textContent = item.label || '';
+            txt.focus();
+            // 커서를 끝으로 이동
+            const range = document.createRange();
+            range.selectNodeContents(txt);
+            range.collapse(false);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+          });
           txt.addEventListener('blur', () => {
             const val = txt.textContent.trim();
-            if (!val) txt.classList.add('placeholder');
+            txt.contentEditable = 'false';
+            if (!val) {
+              txt.innerHTML = '';
+              txt.classList.add('placeholder');
+            } else {
+              txt.innerHTML = linkify(val);
+            }
             saveRoutineLabel(item, val);
           });
+
+          // 순서 이동 버튼 ▲▼
+          const moveWrap = document.createElement('div');
+          moveWrap.className = 'routine-move-wrap';
+          const up = document.createElement('button');
+          up.className = 'routine-move';
+          up.textContent = '▲';
+          up.disabled = itemIdx === 0;
+          up.onclick = () => moveRoutine(item.id, cat.key, -1);
+          const dn = document.createElement('button');
+          dn.className = 'routine-move';
+          dn.textContent = '▼';
+          dn.disabled = itemIdx === items.length - 1;
+          dn.onclick = () => moveRoutine(item.id, cat.key, 1);
+          moveWrap.appendChild(up);
+          moveWrap.appendChild(dn);
 
           const del = document.createElement('button');
           del.className = 'routine-del';
@@ -622,6 +684,7 @@
 
           row.appendChild(cb);
           row.appendChild(txt);
+          row.appendChild(moveWrap);
           row.appendChild(del);
           list.appendChild(row);
         });
@@ -636,6 +699,27 @@
         addRow.appendChild(addBtn);
         list.appendChild(addRow);
       });
+    }
+
+    async function moveRoutine(id, category, dir) {
+      const items = routines.filter(r => r.category === category).sort((a, b) => a.sort_order - b.sort_order);
+      const idx = items.findIndex(r => r.id === id);
+      const newIdx = idx + dir;
+      if (idx === -1 || newIdx < 0 || newIdx >= items.length) return;
+      const a = items[idx], b = items[newIdx];
+      [a.sort_order, b.sort_order] = [b.sort_order, a.sort_order];
+      lsSet('routines', routines);
+      renderRoutines();
+      const toSave = [a, b].filter(r => isRemoteId(r.id));
+      if (SUPA_READY && toSave.length) {
+        setStatus('saving');
+        try {
+          await Promise.all(toSave.map(r => db.from('routines').update({ sort_order: r.sort_order }).eq('id', r.id)));
+          setStatus('saved');
+        } catch (e) { console.error(e); setStatus('error'); }
+      } else {
+        setStatus(SUPA_READY ? 'saved' : 'local');
+      }
     }
 
     async function toggleCheck(routineId, isChecked) {
