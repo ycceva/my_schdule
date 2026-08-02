@@ -570,6 +570,9 @@
 
     let routines = lsGet('routines', null) || defaultRoutines();       // {id, category, label, sort_order}
     let routineChecks = lsGet('checks', []);                            // {routine_id, check_date}
+    // 초기 서버 동기화가 끝나기 전에 로컬에서 수정된 루틴 항목의 id.
+    // 이 목록에 있는 항목은 뒤늦게 도착한 서버 데이터로 덮어쓰지 않습니다.
+    const dirtyRoutineIds = new Set();
 
     function calcProgress(category) {
       const items = routines.filter(r => r.category === category);
@@ -754,6 +757,7 @@
       if (idx === -1 || newIdx < 0 || newIdx >= items.length) return;
       const a = items[idx], b = items[newIdx];
       [a.sort_order, b.sort_order] = [b.sort_order, a.sort_order];
+      dirtyRoutineIds.add(a.id); dirtyRoutineIds.add(b.id);
       lsSet('routines', routines);
       renderRoutines();
       const toSave = [a, b].filter(r => isRemoteId(r.id));
@@ -799,6 +803,7 @@
 
     async function saveRoutineLabel(item, text) {
       item.label = text;
+      dirtyRoutineIds.add(item.id);
       lsSet('routines', routines);
       if (SUPA_READY && isRemoteId(item.id)) {
         setStatus('saving');
@@ -928,6 +933,9 @@
 
     let pages = lsGet('pages', null) || defaultPages();
     let currentPageId = null;
+    // routines와 동일한 이유로, 초기 서버 동기화 전에 로컬에서 수정된
+    // 페이지(바로가기) id를 기록해 덮어쓰기를 막습니다.
+    const dirtyPageIds = new Set();
 
     function makeMoveControls(p, idx) {
       const wrap = document.createElement('div');
@@ -1024,6 +1032,7 @@
       if (idx === -1 || newIdx < 0 || newIdx >= pages.length) return;
       [pages[idx], pages[newIdx]] = [pages[newIdx], pages[idx]];
       pages.forEach((p, i) => { p.sort_order = i; });
+      dirtyPageIds.add(pages[idx].id); dirtyPageIds.add(pages[newIdx].id);
       lsSet('pages', pages);
       renderPages();
       const moved = [pages[idx], pages[newIdx]].filter(p => isRemoteId(p.id));
@@ -1040,6 +1049,7 @@
 
     async function saveShortcutField(item, field, val) {
       item[field] = val;
+      dirtyPageIds.add(item.id);
       lsSet('pages', pages);
       if (SUPA_READY && isRemoteId(item.id)) {
         setStatus('saving');
@@ -1159,6 +1169,7 @@
       const p = pages.find(x => x.id === currentPageId);
       if (!p) return;
       p.title = title;
+      dirtyPageIds.add(p.id);
       lsSet('pages', pages);
       renderPages();
       if (SUPA_READY && isRemoteId(currentPageId)) {
@@ -1178,6 +1189,7 @@
       const p = pages.find(x => x.id === currentPageId);
       if (!p) return;
       p.content = html;
+      dirtyPageIds.add(p.id);
       lsSet('pages', pages);
       if (SUPA_READY && isRemoteId(currentPageId)) {
         setStatus('saving');
@@ -1468,10 +1480,35 @@
     // "추가했는데 다시 리셋되는" 것처럼 보이는 문제가 있었습니다.
     // 아래 병합(merge) 로직으로 그 사이에 로컬에서 추가/수정된 내용을
     // 보존합니다.
-    function mergeById(remoteArr, localArr) {
-      const remoteIds = new Set(remoteArr.map(x => x.id));
-      const localOnly = localArr.filter(x => !remoteIds.has(x.id));
-      return remoteArr.concat(localOnly);
+    // 처음 버전의 mergeById는 "이미 존재하는 항목"이 로컬에서 수정된
+    // 경우를 지켜주지 못했습니다: id가 서버 데이터에도 있으면 무조건
+    // 서버(구버전) 객체로 통째로 교체해버려서, (1) 방금 수정한 내용이
+    // 사라지고, (2) 화면의 편집 핸들러가 들고 있던 객체 참조가 배열에서
+    // 떨어져 나가(orphan) 그 다음 저장이 허공에 뜨는 문제가 있었습니다.
+    // 루틴 항목을 다 고치고 다른 곳을 탭해서 편집을 마칠 때 값이 다시
+    // 리셋되던 원인이 바로 이것입니다.
+    // 아래 버전은 (a) 로컬 객체 참조를 그대로 유지하고, (b) dirtySet에
+    // 있는(=로딩 중 로컬에서 수정된) 항목은 서버 값으로 덮어쓰지 않습니다.
+    function mergeById(remoteArr, localArr, dirtySet) {
+      const localById = new Map(localArr.map(x => [x.id, x]));
+      const usedIds = new Set();
+      const result = [];
+      remoteArr.forEach(remoteItem => {
+        usedIds.add(remoteItem.id);
+        const localItem = localById.get(remoteItem.id);
+        if (localItem) {
+          if (!dirtySet || !dirtySet.has(remoteItem.id)) {
+            Object.assign(localItem, remoteItem); // 참조 유지, 값만 갱신
+          }
+          result.push(localItem);
+        } else {
+          result.push(remoteItem);
+        }
+      });
+      localArr.forEach(localItem => {
+        if (!usedIds.has(localItem.id)) result.push(localItem);
+      });
+      return result;
     }
     function mergeChecks(remoteArr, localArr) {
       const key = c => c.routine_id + '_' + c.check_date;
@@ -1496,7 +1533,7 @@
         if (t.error) throw t.error;
         if (p.error) throw p.error;
 
-        routines = mergeById(r.data || [], routines);
+        routines = mergeById(r.data || [], routines, dirtyRoutineIds);
         lsSet('routines', routines);
 
         routineChecks = mergeChecks(c.data || [], routineChecks);
@@ -1508,7 +1545,7 @@
         CAT_LABEL_KEYS.forEach(k => { if (map[k] !== undefined && !dirtyTextKeys.has(k)) texts[k] = map[k]; });
         lsSet('texts', texts);
 
-        pages = mergeById(p.data || [], pages);
+        pages = mergeById(p.data || [], pages, dirtyPageIds);
         lsSet('pages', pages);
 
         // 서버 데이터는 이미 위에서 로컬 데이터와 병합/저장되었으므로,
