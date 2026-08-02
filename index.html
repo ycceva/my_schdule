@@ -627,6 +627,7 @@
           lsSet('texts', texts);
           syncText(labelKey, v);
         });
+        bindEnterAsBlur(label);
         row.appendChild(label);
 
         const cards = document.createElement('div');
@@ -715,6 +716,7 @@
             }
             saveRoutineLabel(item, val);
           });
+          bindEnterAsNewline(txt);
 
           // 순서 이동 버튼 ▲▼
           const moveWrap = document.createElement('div');
@@ -905,6 +907,42 @@
       });
     }
 
+    // ── Enter 키 직접 제어 ──
+    // contenteditable div에서 Enter를 누르면 브라우저(특히 iOS Safari)가
+    // 자동으로 새 <div>/<br>를 만들어 텍스트를 블록 단위로 쪼갭니다. 이
+    // 과정에서 포커스가 잠깐 흔들리거나(의도치 않은 blur), 이후 값을 읽을
+    // 때 구조가 꼬여서 "줄바꿈하면 초기화되는" 것처럼 보이는 문제가
+    // 있었습니다. 브라우저의 기본 동작에 맡기지 않고, 우리가 직접 Enter를
+    // 가로채서 항상 순수한 "\n" 글자 하나만 삽입하도록 통일합니다.
+    function bindEnterAsNewline(el) {
+      el.addEventListener('keydown', e => {
+        if (e.key !== 'Enter' || e.isComposing) return;
+        e.preventDefault();
+        const sel = window.getSelection();
+        if (!sel || !sel.rangeCount || !el.contains(sel.getRangeAt(0).startContainer)) return;
+        const range = sel.getRangeAt(0);
+        range.deleteContents();
+        const nl = document.createTextNode('\n');
+        range.insertNode(nl);
+        range.setStartAfter(nl);
+        range.collapse(true);
+        sel.removeAllRanges();
+        sel.addRange(range);
+        el.normalize();
+      });
+    }
+    // 제목/라벨류 필드는 한 줄 입력이 자연스러우므로 Enter를 누르면
+    // 줄바꿈 대신 편집을 마치도록(blur) 합니다.
+    function bindEnterAsBlur(el) {
+      el.addEventListener('keydown', e => {
+        if (e.key !== 'Enter' || e.isComposing) return;
+        e.preventDefault();
+        el.blur();
+      });
+    }
+    // 여러 줄 입력이 필요한 자유 텍스트 필드
+    const MULTILINE_TEXT_KEYS = new Set(['today', 'week', 'year', 'routine']);
+
     function bindTexts() {
       TEXT_KEYS.forEach(key => {
         const el = document.getElementById('text_' + key);
@@ -918,6 +956,8 @@
           lsSet('texts', texts);
           syncText(key, val);
         });
+        if (MULTILINE_TEXT_KEYS.has(key)) bindEnterAsNewline(el);
+        else bindEnterAsBlur(el);
       });
     }
 
@@ -982,6 +1022,7 @@
             title.classList.toggle('placeholder', !v);
             saveShortcutField(p, 'title', v);
           });
+          bindEnterAsBlur(title);
 
           const content = document.createElement('div');
           content.className = 'shortcut-text-content';
@@ -995,6 +1036,7 @@
             content.classList.toggle('placeholder', !v.trim());
             saveShortcutField(p, 'content', v);
           });
+          bindEnterAsNewline(content);
 
           const del = document.createElement('button');
           del.className = 'shortcut-del';
@@ -1237,6 +1279,7 @@
     }
 
     document.getElementById('pageViewTitle').addEventListener('blur', savePageTitle);
+    bindEnterAsBlur(document.getElementById('pageViewTitle'));
     document.getElementById('pageContent').addEventListener('blur', savePageContent);
 
     // ── 이미지 업로드 / 삭제 (Supabase Storage: dashboard_images 버킷, 미설정 시 base64로 대체) ──
