@@ -676,11 +676,18 @@
           }
           txt.addEventListener('click', e => {
             if (e.target.tagName === 'A') return; // 링크 클릭은 통과
+            // 이미 편집 중일 때 다시 탭하면(커서 위치를 옮기려는 탭 포함)
+            // 아래 로직이 매번 다시 실행되면서 item.label(수정 전 값)로
+            // 텍스트를 되돌리고 커서를 강제로 끝으로 옮겨버렸습니다.
+            // 이게 "타이핑/줄바꿈 중 커서가 멋대로 움직이고 내용이
+            // 리셋되는" 원인이었습니다. 이미 편집 모드면 그대로 두고
+            // 브라우저 기본 동작(탭한 위치로 커서 이동)에 맡깁니다.
+            if (txt.isContentEditable) return;
             txt.classList.remove('placeholder');
             txt.contentEditable = 'true';
             txt.textContent = item.label || '';
             txt.focus();
-            // 커서를 끝으로 이동
+            // 편집 모드로 처음 진입할 때만 커서를 끝으로 이동
             const range = document.createRange();
             range.selectNodeContents(txt);
             range.collapse(false);
