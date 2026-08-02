@@ -617,7 +617,10 @@
         label.classList.toggle('placeholder', !labelVal.trim());
         label.addEventListener('focus', () => label.classList.remove('placeholder'));
         label.addEventListener('blur', () => {
-          const v = label.textContent;
+          // textContent는 Enter로 생긴 줄바꿈(자식 div/br)을 무시하고 글자를
+          // 이어 붙여버려서 줄바꿈이 사라집니다. innerText는 화면에 보이는
+          // 대로 줄바꿈을 "\n"으로 살려주므로 이걸 사용합니다.
+          const v = label.innerText;
           texts[labelKey] = v;
           dirtyTextKeys.add(labelKey);
           if (!v.trim()) label.classList.add('placeholder');
@@ -699,7 +702,10 @@
             sel.addRange(range);
           });
           txt.addEventListener('blur', () => {
-            const val = txt.textContent.trim();
+            // textContent를 쓰면 Enter로 만든 줄바꿈(div/br)이 그냥 다음
+            // 글자와 붙어버려서 "줄바꿈이 사라지는" 현상이 생깁니다.
+            // innerText는 화면에 보이는 줄바꿈을 "\n"으로 보존해줍니다.
+            const val = txt.innerText.trim();
             txt.contentEditable = 'false';
             if (!val) {
               txt.innerHTML = '';
@@ -904,7 +910,8 @@
         const el = document.getElementById('text_' + key);
         el.addEventListener('focus', () => el.classList.remove('placeholder'));
         el.addEventListener('blur', () => {
-          const val = el.textContent;
+          // innerText를 써서 Enter로 만든 줄바꿈이 사라지지 않게 합니다.
+          const val = el.innerText;
           texts[key] = val;
           dirtyTextKeys.add(key);
           if (!val.trim()) el.classList.add('placeholder');
@@ -971,7 +978,7 @@
           title.classList.toggle('placeholder', !p.title);
           title.addEventListener('focus', () => title.classList.remove('placeholder'));
           title.addEventListener('blur', () => {
-            const v = title.textContent.trim();
+            const v = title.innerText.trim();
             title.classList.toggle('placeholder', !v);
             saveShortcutField(p, 'title', v);
           });
@@ -984,7 +991,7 @@
           content.classList.toggle('placeholder', !(p.content || '').trim());
           content.addEventListener('focus', () => content.classList.remove('placeholder'));
           content.addEventListener('blur', () => {
-            const v = content.textContent;
+            const v = content.innerText;
             content.classList.toggle('placeholder', !v.trim());
             saveShortcutField(p, 'content', v);
           });
@@ -1165,7 +1172,7 @@
 
     async function savePageTitle() {
       if (currentPageId == null) return;
-      const title = document.getElementById('pageViewTitle').textContent.trim();
+      const title = document.getElementById('pageViewTitle').innerText.trim();
       const p = pages.find(x => x.id === currentPageId);
       if (!p) return;
       p.title = title;
