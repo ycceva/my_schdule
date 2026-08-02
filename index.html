@@ -347,6 +347,32 @@
   .lightbox.on { display: flex; }
   .lightbox img { max-width: 92vw; max-height: 92vh; border-radius: 4px; object-fit: contain; }
 
+  /* ── 입력 모달 (iOS 홈화면 앱에서 prompt()가 동작하지 않아 대체) ── */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.6); z-index: 10001;
+    align-items: center; justify-content: center;
+    padding: 20px;
+  }
+  .modal-overlay.on { display: flex; }
+  .modal-box {
+    background: #1e1e1e; border: 0.5px solid #333;
+    border-radius: 10px; padding: 16px;
+    width: 100%; max-width: 320px;
+  }
+  .modal-title { font-size: 14px; color: #ccc; margin-bottom: 10px; }
+  .modal-input {
+    width: 100%; font-size: 16px; font-family: inherit;
+    background: #141414; color: #eee;
+    border: 0.5px solid #333; border-radius: 6px;
+    padding: 8px 10px; outline: none;
+  }
+  .modal-input:focus { border-color: #4a8ac4; }
+  .modal-actions {
+    display: flex; justify-content: flex-end; gap: 8px;
+    margin-top: 12px;
+  }
+
   @media (max-width: 640px) {
     body { padding: 10px; }
     .quick-label { width: 64px; font-size: 12px; }
@@ -453,6 +479,18 @@
   <!-- 라이트박스 -->
   <div class="lightbox" id="lightbox" onclick="document.getElementById('lightbox').classList.remove('on')">
     <img id="lightboxImg" src="">
+  </div>
+
+  <!-- 페이지 추가 모달 (iOS 홈화면 앱 대응) -->
+  <div class="modal-overlay" id="pageAddModal">
+    <div class="modal-box">
+      <div class="modal-title">페이지 제목을 입력하세요</div>
+      <input type="text" id="pageAddInput" class="modal-input" placeholder="제목" spellcheck="false">
+      <div class="modal-actions">
+        <button class="pv-btn" onclick="closePageAddModal()">취소</button>
+        <button class="pv-btn" onclick="confirmAddPage()">추가</button>
+      </div>
+    </div>
   </div>
 
   <!-- Supabase SDK -->
@@ -578,6 +616,7 @@
         label.addEventListener('blur', () => {
           const v = label.textContent;
           texts[labelKey] = v;
+          dirtyTextKeys.add(labelKey);
           if (!v.trim()) label.classList.add('placeholder');
           lsSet('texts', texts);
           syncText(labelKey, v);
@@ -833,6 +872,10 @@
       title_backup: '데이터 백업'
     };
     let texts = lsGet('texts', {});
+    // 초기 Supabase 로딩이 끝나기 전에 사용자가 직접 수정한 텍스트 키를
+    // 기록해 두었다가, 뒤늦게 도착한(오래된) 서버 데이터로 덮어써서
+    // 방금 입력한 내용이 사라지는 것을 방지합니다.
+    const dirtyTextKeys = new Set();
 
     function applyTexts() {
       TEXT_KEYS.forEach(key => {
@@ -851,6 +894,7 @@
         el.addEventListener('blur', () => {
           const val = el.textContent;
           texts[key] = val;
+          dirtyTextKeys.add(key);
           if (!val.trim()) el.classList.add('placeholder');
           lsSet('texts', texts);
           syncText(key, val);
@@ -1040,11 +1084,27 @@
       }
     }
 
-    async function addPage() {
-      const title = prompt('페이지 제목을 입력하세요:');
-      if (!title || !title.trim()) return;
+    // iOS(아이폰/아이패드)에서 홈 화면에 추가한 앱(standalone 모드)은
+    // window.prompt()가 동작하지 않아 항목 추가가 조용히 무시되고
+    // 화면이 그대로(리셋된 것처럼) 남는 문제가 있었습니다.
+    // 이를 피하기 위해 자체 입력 모달을 사용합니다.
+    function addPage() {
+      const input = document.getElementById('pageAddInput');
+      input.value = '';
+      document.getElementById('pageAddModal').classList.add('on');
+      setTimeout(() => input.focus(), 50);
+    }
+
+    function closePageAddModal() {
+      document.getElementById('pageAddModal').classList.remove('on');
+    }
+
+    async function confirmAddPage() {
+      const title = document.getElementById('pageAddInput').value.trim();
+      closePageAddModal();
+      if (!title) return;
       const order = pages.length;
-      const newItem = { type: 'link', title: title.trim(), content: '', sort_order: order };
+      const newItem = { type: 'link', title, content: '', sort_order: order };
       if (SUPA_READY) {
         setStatus('saving');
         try {
@@ -1064,6 +1124,11 @@
       lsSet('pages', pages);
       renderPages();
     }
+
+    document.getElementById('pageAddInput').addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); confirmAddPage(); }
+      if (e.key === 'Escape') { e.preventDefault(); closePageAddModal(); }
+    });
 
     function openPage(id) {
       const p = pages.find(x => x.id === id);
@@ -1388,6 +1453,26 @@
     //  초기화 — localStorage(또는 기본값)로 즉시 렌더링 후,
     //  Supabase가 설정돼 있으면 서버 데이터로 동기화
     // ════════════════════════════════════════════════════════
+    // 앱을 열자마자 로컬 데이터로 먼저 화면을 그린 뒤(빠른 표시) 이 함수가
+    // 백그라운드로 서버 데이터를 불러옵니다. 모바일 네트워크(특히 아이폰/
+    // 아이패드에서 홈 화면 앱으로 재실행할 때)는 이 요청이 느려서, 그 사이에
+    // 사용자가 새 항목을 추가하거나 글자를 입력하면, 뒤늦게 도착한(요청 시점
+    // 기준의 오래된) 서버 데이터가 방금 입력한 내용을 통째로 덮어써 버려
+    // "추가했는데 다시 리셋되는" 것처럼 보이는 문제가 있었습니다.
+    // 아래 병합(merge) 로직으로 그 사이에 로컬에서 추가/수정된 내용을
+    // 보존합니다.
+    function mergeById(remoteArr, localArr) {
+      const remoteIds = new Set(remoteArr.map(x => x.id));
+      const localOnly = localArr.filter(x => !remoteIds.has(x.id));
+      return remoteArr.concat(localOnly);
+    }
+    function mergeChecks(remoteArr, localArr) {
+      const key = c => c.routine_id + '_' + c.check_date;
+      const remoteKeys = new Set(remoteArr.map(key));
+      const localOnly = localArr.filter(c => !remoteKeys.has(key(c)));
+      return remoteArr.concat(localOnly);
+    }
+
     async function loadFromSupabase() {
       if (!SUPA_READY) { setStatus('local'); return; }
       setStatus('saving');
@@ -1404,19 +1489,32 @@
         if (t.error) throw t.error;
         if (p.error) throw p.error;
 
-        if (r.data && r.data.length) { routines = r.data; lsSet('routines', routines); }
-        routineChecks = c.data || []; lsSet('checks', routineChecks);
+        routines = mergeById(r.data || [], routines);
+        lsSet('routines', routines);
+
+        routineChecks = mergeChecks(c.data || [], routineChecks);
+        lsSet('checks', routineChecks);
+
         const map = {};
         (t.data || []).forEach(row => map[row.id] = row.content);
-        TEXT_KEYS.forEach(k => { if (map[k] !== undefined) texts[k] = map[k]; });
-        CAT_LABEL_KEYS.forEach(k => { if (map[k] !== undefined) texts[k] = map[k]; });
+        TEXT_KEYS.forEach(k => { if (map[k] !== undefined && !dirtyTextKeys.has(k)) texts[k] = map[k]; });
+        CAT_LABEL_KEYS.forEach(k => { if (map[k] !== undefined && !dirtyTextKeys.has(k)) texts[k] = map[k]; });
         lsSet('texts', texts);
-        if (p.data && p.data.length) { pages = p.data; lsSet('pages', pages); }
 
-        renderProgress();
-        renderRoutines();
-        applyTexts();
-        renderPages();
+        pages = mergeById(p.data || [], pages);
+        lsSet('pages', pages);
+
+        // 서버 데이터는 이미 위에서 로컬 데이터와 병합/저장되었으므로,
+        // 지금 이 순간 사용자가 어떤 항목을 편집 중이라면(포커스가 편집
+        // 가능한 요소에 있다면) 화면을 다시 그리지 않아 입력 중인 내용이
+        // 사라지지 않게 합니다. 화면 갱신은 다음 편집/새로고침 시 반영됩니다.
+        const activeEl = document.activeElement;
+        if (!activeEl || !activeEl.isContentEditable) {
+          renderProgress();
+          renderRoutines();
+          applyTexts();
+          renderPages();
+        }
         setStatus('saved');
       } catch (e) {
         console.error('Supabase 로드 실패:', e);
