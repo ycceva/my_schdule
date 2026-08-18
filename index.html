@@ -137,11 +137,13 @@
   }
 
   /* ── 빠른 입력 (오늘할거/이번주할거/일년목표/루틴) ── */
+  /* 가장 중요한 섹션이라 테두리와 제목(라벨) 글자를 노란색으로 강조합니다. */
   .quick-box {
     background: #1a1a1a;
-    border: 0.5px solid #2a2a2a;
+    border: 2px solid #f5c518;
     border-radius: 6px;
     overflow: hidden;
+    box-shadow: 0 0 0 1px rgba(245,197,24,0.25), 0 0 14px rgba(245,197,24,0.18);
   }
   .quick-row {
     display: flex; align-items: flex-start; gap: 8px;
@@ -151,11 +153,11 @@
   .quick-row:last-child { border-bottom: none; }
   .quick-label {
     flex-shrink: 0; width: 86px; font-size: 13px;
-    font-weight: 500; color: #888; padding-top: 1px;
+    font-weight: 700; color: #f5c518; padding-top: 1px;
     outline: none; white-space: pre-wrap; word-break: break-word;
   }
-  .quick-label.placeholder::before { content: '제목'; color: #3a3a3a; }
-  .quick-label:focus { background: rgba(58,90,122,0.06); }
+  .quick-label.placeholder::before { content: '제목'; color: rgba(245,197,24,0.45); }
+  .quick-label:focus { background: rgba(245,197,24,0.12); }
   .quick-text {
     flex: 1; font-size: 14px; color: #ddd;
     min-height: 18px; outline: none;
@@ -513,12 +515,24 @@
       } catch (e) { console.error('Supabase 초기화 실패:', e); }
     }
 
-    function setStatus(state) {
+    // Supabase/PostgREST 에러 객체는 그냥 문자열로 합치면(String(e), 템플릿
+    // 리터럴 등) "[object Object]"로만 보여서 실제 원인(message/details/
+    // hint/code)이 가려집니다. 읽을 수 있는 문구를 최대한 뽑아냅니다.
+    function errMsg(e) {
+      if (!e) return '알 수 없는 오류';
+      if (typeof e === 'string') return e;
+      const parts = [e.message, e.error_description, e.details, e.hint, e.code]
+        .filter(Boolean);
+      if (parts.length) return parts.join(' / ');
+      try { return JSON.stringify(e); } catch (_) { return String(e); }
+    }
+
+    function setStatus(state, detail) {
       const el = document.getElementById('saveStatus');
-      if (state === 'saving') { el.textContent = '● 저장 중...'; el.className = 'save-status saving'; }
-      if (state === 'saved')  { el.textContent = '● 저장됨';    el.className = 'save-status saved'; }
-      if (state === 'error')  { el.textContent = '● 저장 실패 (Supabase 확인)'; el.className = 'save-status error'; }
-      if (state === 'local')  { el.textContent = '● 이 기기에 저장됨 (Supabase 미설정)'; el.className = 'save-status saving'; }
+      if (state === 'saving') { el.textContent = '● 저장 중...'; el.className = 'save-status saving'; el.title = ''; }
+      if (state === 'saved')  { el.textContent = '● 저장됨';    el.className = 'save-status saved'; el.title = ''; }
+      if (state === 'error')  { el.textContent = '● 저장 실패 (Supabase 확인)'; el.className = 'save-status error'; el.title = detail ? ('오류 상세: ' + detail) : ''; }
+      if (state === 'local')  { el.textContent = '● 이 기기에 저장됨 (Supabase 미설정)'; el.className = 'save-status saving'; el.title = ''; }
     }
 
     // ── localStorage 헬퍼 (Supabase 미설정 시 / 오프라인 캐시) ──
@@ -774,7 +788,7 @@
         try {
           await Promise.all(toSave.map(r => db.from('routines').update({ sort_order: r.sort_order }).eq('id', r.id)));
           setStatus('saved');
-        } catch (e) { console.error(e); setStatus('error'); }
+        } catch (e) { console.error(e); setStatus('error', errMsg(e)); }
       } else {
         setStatus(SUPA_READY ? 'saved' : 'local');
       }
@@ -803,7 +817,7 @@
               .eq('routine_id', routineId).eq('check_date', ts);
             setStatus(error ? 'error' : 'saved');
           }
-        } catch (e) { console.error(e); setStatus('error'); }
+        } catch (e) { console.error(e); setStatus('error', errMsg(e)); }
       } else {
         setStatus(SUPA_READY ? 'saved' : 'local');
       }
@@ -818,7 +832,7 @@
         try {
           const { error } = await db.from('routines').update({ label: text }).eq('id', item.id);
           setStatus(error ? 'error' : 'saved');
-        } catch (e) { console.error(e); setStatus('error'); }
+        } catch (e) { console.error(e); setStatus('error', errMsg(e)); }
       } else {
         setStatus(SUPA_READY ? 'saved' : 'local');
       }
@@ -838,7 +852,7 @@
         } catch (e) {
           console.error(e);
           routines.push({ id: uid(), category, label: '', sort_order: order });
-          setStatus('error');
+          setStatus('error', errMsg(e));
         }
       } else {
         routines.push({ id: uid(), category, label: '', sort_order: order });
@@ -864,7 +878,7 @@
           await db.from('routine_checks').delete().eq('routine_id', id);
           const { error } = await db.from('routines').delete().eq('id', id);
           setStatus(error ? 'error' : 'saved');
-        } catch (e) { console.error(e); setStatus('error'); }
+        } catch (e) { console.error(e); setStatus('error', errMsg(e)); }
       } else {
         setStatus(SUPA_READY ? 'saved' : 'local');
       }
@@ -967,7 +981,7 @@
       try {
         const { error } = await db.from('dashboard_texts').upsert({ id: key, content: val });
         setStatus(error ? 'error' : 'saved');
-      } catch (e) { console.error(e); setStatus('error'); }
+      } catch (e) { console.error(e); setStatus('error', errMsg(e)); }
     }
 
 
@@ -1090,7 +1104,7 @@
         try {
           await Promise.all(moved.map(p => db.from('pages').update({ sort_order: p.sort_order }).eq('id', p.id)));
           setStatus('saved');
-        } catch (e) { console.error(e); setStatus('error'); }
+        } catch (e) { console.error(e); setStatus('error', errMsg(e)); }
       } else {
         setStatus(SUPA_READY ? 'saved' : 'local');
       }
@@ -1105,7 +1119,7 @@
         try {
           const { error } = await db.from('pages').update({ [field]: val }).eq('id', item.id);
           setStatus(error ? 'error' : 'saved');
-        } catch (e) { console.error(e); setStatus('error'); }
+        } catch (e) { console.error(e); setStatus('error', errMsg(e)); }
       } else {
         setStatus(SUPA_READY ? 'saved' : 'local');
       }
@@ -1124,7 +1138,7 @@
         } catch (e) {
           console.error(e);
           pages.push({ id: uid(), ...newItem });
-          setStatus('error');
+          setStatus('error', errMsg(e));
         }
       } else {
         pages.push({ id: uid(), ...newItem });
@@ -1144,7 +1158,7 @@
         try {
           const { error } = await db.from('pages').delete().eq('id', id);
           setStatus(error ? 'error' : 'saved');
-        } catch (e) { console.error(e); setStatus('error'); }
+        } catch (e) { console.error(e); setStatus('error', errMsg(e)); }
       } else {
         setStatus(SUPA_READY ? 'saved' : 'local');
       }
@@ -1181,7 +1195,7 @@
         } catch (e) {
           console.error(e);
           pages.push({ id: uid(), ...newItem });
-          setStatus('error');
+          setStatus('error', errMsg(e));
         }
       } else {
         pages.push({ id: uid(), ...newItem });
@@ -1226,7 +1240,7 @@
         try {
           const { error } = await db.from('pages').update({ title }).eq('id', currentPageId);
           setStatus(error ? 'error' : 'saved');
-        } catch (e) { console.error(e); setStatus('error'); }
+        } catch (e) { console.error(e); setStatus('error', errMsg(e)); }
       } else {
         setStatus(SUPA_READY ? 'saved' : 'local');
       }
@@ -1245,7 +1259,7 @@
         try {
           const { error } = await db.from('pages').update({ content: html }).eq('id', currentPageId);
           setStatus(error ? 'error' : 'saved');
-        } catch (e) { console.error(e); setStatus('error'); }
+        } catch (e) { console.error(e); setStatus('error', errMsg(e)); }
       } else {
         setStatus(SUPA_READY ? 'saved' : 'local');
       }
@@ -1268,7 +1282,7 @@
           const { error } = await db.from('pages').delete().eq('id', currentPageId);
           if (error) throw error;
           setStatus('saved');
-        } catch (e) { console.error(e); setStatus('error'); }
+        } catch (e) { console.error(e); setStatus('error', errMsg(e)); }
       } else {
         setStatus(SUPA_READY ? 'saved' : 'local');
       }
@@ -1349,7 +1363,7 @@
         registerPageImg(img);
         insertAtCursor(img);
         await savePageContent();
-      } catch (err) { console.error(err); setStatus('error'); }
+      } catch (err) { console.error(err); setStatus('error', errMsg(err)); }
     });
 
     function insertAtCursor(node) {
@@ -1556,7 +1570,16 @@
         }
       });
       localArr.forEach(localItem => {
-        if (!usedIds.has(localItem.id)) result.push(localItem);
+        if (usedIds.has(localItem.id)) return;
+        // 이 기기의 로컬 캐시에만 있고 이번 서버 응답에는 없는 항목입니다.
+        // id가 서버용(숫자)인데도 없다는 건 다른 기기 등에서 이미 삭제된
+        // 것이므로 되살리면 안 됩니다 — 예전엔 여기서 무조건 되살려서
+        // "다른 기기에서 열면 삭제했던 빈 칸/행이 다시 나타나는" 문제가
+        // 있었습니다. id가 로컬 전용(문자열, 아직 서버에 저장 못한 새 항목)
+        // 이거나 지금 막 로컬에서 수정 중(dirtySet)이라면 아직 서버 반영 전일
+        // 수 있으니 그대로 유지합니다.
+        if (isRemoteId(localItem.id) && !(dirtySet && dirtySet.has(localItem.id))) return;
+        result.push(localItem);
       });
       return result;
     }
@@ -1611,8 +1634,9 @@
         }
         setStatus('saved');
       } catch (e) {
-        console.error('Supabase 로드 실패:', e);
-        setStatus('error');
+        const msg = errMsg(e);
+        console.error('Supabase 로드 실패:', msg, e);
+        setStatus('error', msg);
       }
     }
 
