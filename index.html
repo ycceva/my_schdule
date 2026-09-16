@@ -392,18 +392,10 @@
       <div class="modal-title">로그인이 필요합니다</div>
       <div id="authStepEmail">
         <input type="email" id="authEmail" class="modal-input" placeholder="이메일" autocomplete="email" spellcheck="false">
+        <input type="password" id="authPassword" class="modal-input" placeholder="비밀번호" autocomplete="current-password" style="margin-top:8px;">
         <div class="auth-err" id="authErr1"></div>
         <div class="modal-actions">
-          <button class="pv-btn" onclick="sendLoginCode()">코드 받기</button>
-        </div>
-      </div>
-      <div id="authStepCode" style="display:none; margin-top:10px;">
-        <div class="auth-sub">이메일로 받은 6자리 코드를 입력하세요</div>
-        <input type="text" id="authCode" class="modal-input" placeholder="123456" inputmode="numeric" maxlength="6" autocomplete="one-time-code">
-        <div class="auth-err" id="authErr2"></div>
-        <div class="modal-actions">
-          <button class="pv-btn" onclick="backToEmailStep()">다시 입력</button>
-          <button class="pv-btn" onclick="verifyLoginCode()">로그인</button>
+          <button class="pv-btn" onclick="loginWithPassword()">로그인</button>
         </div>
       </div>
     </div>
@@ -1815,20 +1807,17 @@
     }, true);
 
     // ════════════════════════════════════════════════════════
-    //  로그인 (이메일로 받은 6자리 코드, 비밀번호 없음)
-    //  Supabase Auth의 signInWithOtp는 기본적으로 이메일에 매직링크와
-    //  함께 6자리 코드({{ .Token }})도 같이 보내줍니다. 그 코드를
-    //  verifyOtp로 확인하면 로그인됩니다. 로그인 안 된 상태에서는
-    //  appRoot(대시보드 전체)를 숨기고 authView만 보여줍니다.
+    //  로그인 (이메일 + 비밀번호)
+    //  이메일 발송이 전혀 필요 없는 방식입니다. 비밀번호를 잊어버리면
+    //  Supabase 대시보드 SQL Editor에서 본인이 직접 재설정할 수 있습니다.
+    //  로그인 안 된 상태에서는 appRoot(대시보드 전체)를 숨기고
+    //  authView만 보여줍니다.
     // ════════════════════════════════════════════════════════
     function showApp() { document.getElementById('appRoot').style.display = ''; }
     function hideApp() { document.getElementById('appRoot').style.display = 'none'; }
     function showAuth() {
       document.getElementById('authView').classList.add('on');
-      document.getElementById('authStepCode').style.display = 'none';
-      document.getElementById('authStepEmail').style.display = '';
       document.getElementById('authErr1').textContent = '';
-      document.getElementById('authErr2').textContent = '';
     }
     function hideAuth() { document.getElementById('authView').classList.remove('on'); }
 
@@ -1860,37 +1849,15 @@
       db.auth.onAuthStateChange((_event, newSession) => handleAuthState(newSession));
     }
 
-    async function sendLoginCode() {
+    async function loginWithPassword() {
       const email = document.getElementById('authEmail').value.trim();
+      const password = document.getElementById('authPassword').value;
       const errEl = document.getElementById('authErr1');
       errEl.textContent = '';
-      if (!email) { errEl.textContent = '이메일을 입력해주세요.'; return; }
-      errEl.textContent = '코드 전송 중...';
+      if (!email || !password) { errEl.textContent = '이메일과 비밀번호를 입력해주세요.'; return; }
+      errEl.textContent = '로그인 중...';
       try {
-        const { error } = await db.auth.signInWithOtp({ email, options: { shouldCreateUser: false } });
-        if (error) { errEl.textContent = errMsg(error); return; }
-        errEl.textContent = '';
-        window.__authEmail = email;
-        document.getElementById('authStepEmail').style.display = 'none';
-        document.getElementById('authStepCode').style.display = '';
-        document.getElementById('authCode').focus();
-      } catch (e) { errEl.textContent = errMsg(e); }
-    }
-
-    function backToEmailStep() {
-      document.getElementById('authStepCode').style.display = 'none';
-      document.getElementById('authStepEmail').style.display = '';
-      document.getElementById('authErr2').textContent = '';
-    }
-
-    async function verifyLoginCode() {
-      const email = window.__authEmail;
-      const token = document.getElementById('authCode').value.trim();
-      const errEl = document.getElementById('authErr2');
-      if (!token) { errEl.textContent = '코드를 입력해주세요.'; return; }
-      errEl.textContent = '확인 중...';
-      try {
-        const { error } = await db.auth.verifyOtp({ email, token, type: 'email' });
+        const { error } = await db.auth.signInWithPassword({ email, password });
         if (error) { errEl.textContent = errMsg(error); return; }
         errEl.textContent = '';
         // 성공하면 onAuthStateChange가 감지해서 화면 전환을 처리합니다.
@@ -1902,11 +1869,11 @@
       await db.auth.signOut();
     }
 
-    document.getElementById('authCode').addEventListener('keydown', e => {
-      if (e.key === 'Enter') { e.preventDefault(); verifyLoginCode(); }
+    document.getElementById('authPassword').addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); loginWithPassword(); }
     });
     document.getElementById('authEmail').addEventListener('keydown', e => {
-      if (e.key === 'Enter') { e.preventDefault(); sendLoginCode(); }
+      if (e.key === 'Enter') { e.preventDefault(); document.getElementById('authPassword').focus(); }
     });
 
     checkAuthAndInit();
