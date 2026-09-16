@@ -374,6 +374,8 @@
     display: flex; justify-content: flex-end; gap: 8px;
     margin-top: 12px;
   }
+  .auth-err { font-size: 12px; color: #ff8a8a; margin-top: 8px; min-height: 14px; }
+  .auth-sub { font-size: 12px; color: #888; margin-bottom: 8px; }
 
   @media (max-width: 640px) {
     body { padding: 10px; }
@@ -385,13 +387,40 @@
 </head>
 <body>
 
+  <div class="modal-overlay" id="authView">
+    <div class="modal-box">
+      <div class="modal-title">로그인이 필요합니다</div>
+      <div id="authStepEmail">
+        <input type="email" id="authEmail" class="modal-input" placeholder="이메일" autocomplete="email" spellcheck="false">
+        <div class="auth-err" id="authErr1"></div>
+        <div class="modal-actions">
+          <button class="pv-btn" onclick="sendLoginCode()">코드 받기</button>
+        </div>
+      </div>
+      <div id="authStepCode" style="display:none; margin-top:10px;">
+        <div class="auth-sub">이메일로 받은 6자리 코드를 입력하세요</div>
+        <input type="text" id="authCode" class="modal-input" placeholder="123456" inputmode="numeric" maxlength="6" autocomplete="one-time-code">
+        <div class="auth-err" id="authErr2"></div>
+        <div class="modal-actions">
+          <button class="pv-btn" onclick="backToEmailStep()">다시 입력</button>
+          <button class="pv-btn" onclick="verifyLoginCode()">로그인</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="appRoot" style="display:none">
+
   <div class="header">
     <div class="header-left">
       <span class="header-badge">SCHEDULE TRACKER</span>
       <h1><span class="header-heart">❤️</span><span id="text_title" contenteditable="true" spellcheck="false"></span></h1>
       <span class="header-date" id="headerDate"></span>
     </div>
-    <span class="save-status" id="saveStatus">● 로딩 중...</span>
+    <div style="display:flex; align-items:center; gap:8px; z-index:1; flex-shrink:0;">
+      <span class="save-status" id="saveStatus">● 로딩 중...</span>
+      <button class="pv-btn" id="logoutBtn" onclick="logout()" style="display:none;">로그아웃</button>
+    </div>
   </div>
 
   <!-- 26년 성장 진행률 -->
@@ -495,6 +524,7 @@
     </div>
   </div>
 
+  </div>
   <!-- Supabase SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -1784,7 +1814,102 @@
       if (!w) { location.href = url; }
     }, true);
 
-    init();
+    // ════════════════════════════════════════════════════════
+    //  로그인 (이메일로 받은 6자리 코드, 비밀번호 없음)
+    //  Supabase Auth의 signInWithOtp는 기본적으로 이메일에 매직링크와
+    //  함께 6자리 코드({{ .Token }})도 같이 보내줍니다. 그 코드를
+    //  verifyOtp로 확인하면 로그인됩니다. 로그인 안 된 상태에서는
+    //  appRoot(대시보드 전체)를 숨기고 authView만 보여줍니다.
+    // ════════════════════════════════════════════════════════
+    function showApp() { document.getElementById('appRoot').style.display = ''; }
+    function hideApp() { document.getElementById('appRoot').style.display = 'none'; }
+    function showAuth() {
+      document.getElementById('authView').classList.add('on');
+      document.getElementById('authStepCode').style.display = 'none';
+      document.getElementById('authStepEmail').style.display = '';
+      document.getElementById('authErr1').textContent = '';
+      document.getElementById('authErr2').textContent = '';
+    }
+    function hideAuth() { document.getElementById('authView').classList.remove('on'); }
+
+    // 로그인 직후 init()이 두 번 실행되지 않도록(이벤트 리스너 중복 방지)
+    // 이미 초기화됐는지 기억해둡니다.
+    let appInitialized = false;
+    function handleAuthState(session) {
+      const logoutBtn = document.getElementById('logoutBtn');
+      if (session) {
+        hideAuth();
+        showApp();
+        if (logoutBtn) logoutBtn.style.display = '';
+        if (!appInitialized) { appInitialized = true; init(); }
+        else { loadFromSupabase(); }
+      } else {
+        appInitialized = false;
+        if (logoutBtn) logoutBtn.style.display = 'none';
+        showAuth();
+        hideApp();
+      }
+    }
+
+    async function checkAuthAndInit() {
+      // Supabase 자체가 설정 안 된 경우(SUPA_READY false)는 로그인 없이
+      // 예전처럼 로컬 전용으로 그냥 동작시킵니다.
+      if (!SUPA_READY) { showApp(); init(); return; }
+      const { data: { session } } = await db.auth.getSession();
+      handleAuthState(session);
+      db.auth.onAuthStateChange((_event, newSession) => handleAuthState(newSession));
+    }
+
+    async function sendLoginCode() {
+      const email = document.getElementById('authEmail').value.trim();
+      const errEl = document.getElementById('authErr1');
+      errEl.textContent = '';
+      if (!email) { errEl.textContent = '이메일을 입력해주세요.'; return; }
+      errEl.textContent = '코드 전송 중...';
+      try {
+        const { error } = await db.auth.signInWithOtp({ email, options: { shouldCreateUser: false } });
+        if (error) { errEl.textContent = errMsg(error); return; }
+        errEl.textContent = '';
+        window.__authEmail = email;
+        document.getElementById('authStepEmail').style.display = 'none';
+        document.getElementById('authStepCode').style.display = '';
+        document.getElementById('authCode').focus();
+      } catch (e) { errEl.textContent = errMsg(e); }
+    }
+
+    function backToEmailStep() {
+      document.getElementById('authStepCode').style.display = 'none';
+      document.getElementById('authStepEmail').style.display = '';
+      document.getElementById('authErr2').textContent = '';
+    }
+
+    async function verifyLoginCode() {
+      const email = window.__authEmail;
+      const token = document.getElementById('authCode').value.trim();
+      const errEl = document.getElementById('authErr2');
+      if (!token) { errEl.textContent = '코드를 입력해주세요.'; return; }
+      errEl.textContent = '확인 중...';
+      try {
+        const { error } = await db.auth.verifyOtp({ email, token, type: 'email' });
+        if (error) { errEl.textContent = errMsg(error); return; }
+        errEl.textContent = '';
+        // 성공하면 onAuthStateChange가 감지해서 화면 전환을 처리합니다.
+      } catch (e) { errEl.textContent = errMsg(e); }
+    }
+
+    async function logout() {
+      if (!confirm('로그아웃 하시겠어요?')) return;
+      await db.auth.signOut();
+    }
+
+    document.getElementById('authCode').addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); verifyLoginCode(); }
+    });
+    document.getElementById('authEmail').addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); sendLoginCode(); }
+    });
+
+    checkAuthAndInit();
   </script>
 </body>
 </html>
