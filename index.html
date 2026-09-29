@@ -377,6 +377,101 @@
   .auth-err { font-size: 12px; color: #ff8a8a; margin-top: 8px; min-height: 14px; }
   .auth-sub { font-size: 12px; color: #888; margin-bottom: 8px; }
 
+  /* ── 혈당 일지 ── */
+  #glucoseView > * { max-width: 640px; margin-left: auto; margin-right: auto; }
+  .glu-form {
+    background: #1a1a1a; border: 0.5px solid #2a2a2a;
+    border-radius: 8px; padding: 12px; margin-bottom: 14px;
+  }
+  .glu-form.editing { border-color: #4a8ac4; }
+  .glu-form-title { font-size: 12px; color: #777; margin-bottom: 10px; letter-spacing: 0.4px; }
+  .glu-form.editing .glu-form-title { color: #7fb2e0; }
+  .glu-row { display: flex; align-items: center; gap: 8px; margin-bottom: 9px; }
+  .glu-row.top { align-items: flex-start; }
+  .glu-lbl {
+    width: 58px; flex-shrink: 0; font-size: 13px; color: #888;
+    outline: none; word-break: break-word;
+  }
+  .glu-row.top .glu-lbl { padding-top: 5px; }
+  .glu-name { color: #ddd; font-weight: 600; border-bottom: 0.5px dashed #3a3a3a; }
+  .glu-name.placeholder::before { content: '이름'; color: #3a3a3a; }
+  .glu-name:focus { background: rgba(58,90,122,0.12); }
+  .glu-input {
+    font-size: 16px; font-family: inherit; color-scheme: dark;
+    background: #141414; color: #eee;
+    border: 0.5px solid #333; border-radius: 6px;
+    padding: 6px 9px; outline: none; min-width: 0;
+  }
+  .glu-input:focus { border-color: #4a8ac4; }
+  .glu-input.wide { flex: 1; }
+  .glu-num { width: 78px; text-align: right; }
+  .glu-unit { font-size: 11px; color: #666; flex-shrink: 0; }
+  .glu-chips { display: flex; flex-wrap: wrap; gap: 6px; flex: 1; }
+  .glu-chip {
+    font-size: 13px; font-family: inherit;
+    background: none; color: #999;
+    border: 0.5px solid #3a3a3a; border-radius: 14px;
+    padding: 5px 11px; cursor: pointer;
+  }
+  .glu-chip.on { background: rgba(74,138,196,0.2); border-color: #4a8ac4; color: #fff; font-weight: 600; }
+  .glu-note { font-size: 11px; color: #8a8a8a; margin: -2px 0 6px 66px; min-height: 0; }
+  .glu-note:empty { display: none; }
+  .glu-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
+  .glu-save {
+    font-size: 14px; font-weight: 600; font-family: inherit;
+    background: #4a8ac4; color: #fff; border: none;
+    border-radius: 6px; padding: 8px 18px; cursor: pointer;
+  }
+  .glu-save:active { background: #3a7ab4; }
+
+  .glu-badge {
+    display: inline-block; font-size: 11px; font-weight: 600;
+    padding: 2px 7px; border-radius: 10px; white-space: nowrap;
+  }
+  .glu-badge:empty { display: none; }
+  .glu-badge.lv-ok   { color: #6fdc7a; background: rgba(111,220,122,0.13); }
+  .glu-badge.lv-warn { color: #f5c518; background: rgba(245,197,24,0.14); }
+  .glu-badge.lv-high { color: #ff7b7b; background: rgba(255,107,107,0.16); }
+  .glu-badge.lv-low  { color: #7cc0ff; background: rgba(107,184,255,0.16); }
+
+  .glu-hint { font-size: 11px; color: #555; margin: 0 2px 6px; }
+  .glu-grid {
+    display: grid; grid-template-columns: 74px 1fr 1fr 22px;
+    align-items: center; gap: 6px;
+  }
+  .glu-head { font-size: 11px; color: #666; padding: 0 10px 4px; }
+  .glu-date {
+    font-size: 12px; font-weight: 600; color: #aaa;
+    margin: 12px 2px 5px;
+  }
+  .glu-item {
+    background: #1a1a1a; border: 0.5px solid #2a2a2a;
+    border-radius: 6px; padding: 8px 10px; margin-bottom: 5px;
+    cursor: pointer;
+  }
+  .glu-item:active { background: #232323; }
+  .glu-item.editing { border-color: #4a8ac4; }
+  .glu-timing { font-size: 12px; color: #aaa; }
+  .glu-val { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
+  .glu-val-num { font-size: 16px; font-weight: 700; color: #eee; font-variant-numeric: tabular-nums; }
+  .glu-empty { color: #3a3a3a; font-size: 14px; }
+  .glu-memo { font-size: 12px; color: #888; margin-top: 5px; white-space: pre-wrap; word-break: break-word; }
+  .glu-pending { font-size: 11px; color: #c9a227; margin-top: 4px; }
+  .glu-emptystate { font-size: 13px; color: #555; text-align: center; padding: 24px 0; }
+
+  .glu-ref {
+    margin-top: 18px; background: #1a1a1a;
+    border: 0.5px solid #2a2a2a; border-radius: 8px; padding: 10px 12px;
+    font-size: 12px; color: #aaa; line-height: 1.6;
+  }
+  .glu-ref summary { cursor: pointer; color: #bbb; font-size: 13px; }
+  .glu-ref h4 { font-size: 12px; color: #ddd; margin: 12px 0 4px; font-weight: 600; }
+  .glu-ref table { width: 100%; border-collapse: collapse; }
+  .glu-ref td { padding: 3px 4px; border-bottom: 0.5px solid #262626; vertical-align: top; }
+  .glu-ref td:last-child { text-align: right; white-space: nowrap; color: #ddd; font-variant-numeric: tabular-nums; }
+  .glu-ref p { margin-top: 8px; color: #888; }
+  .glu-ref a { color: #7fb2e0; }
+
   @media (max-width: 640px) {
     body { padding: 10px; }
     .quick-label { width: 64px; font-size: 12px; }
@@ -497,6 +592,91 @@
       <button class="pv-btn del" onclick="deleteCurrentPage()">삭제</button>
     </div>
     <div class="page-content" id="pageContent" contenteditable="true" spellcheck="false"></div>
+  </div>
+
+  <!-- 혈당 일지 -->
+  <div class="page-view" id="glucoseView">
+    <div class="page-view-header">
+      <button class="pv-btn" onclick="closeGlucose()">← 뒤로</button>
+      <div class="page-view-title" id="glucoseTitle">혈당 일지</div>
+    </div>
+
+    <div class="glu-form" id="gluForm">
+      <div class="glu-form-title" id="gluFormTitle">새 기록</div>
+      <div class="glu-row">
+        <span class="glu-lbl">날짜</span>
+        <input type="date" id="gluDate" class="glu-input wide">
+      </div>
+      <div class="glu-row top">
+        <span class="glu-lbl">측정 시점</span>
+        <div class="glu-chips" id="gluTimingChips"></div>
+      </div>
+      <div class="glu-note" id="gluNote"></div>
+      <div class="glu-row">
+        <div class="glu-lbl glu-name" id="text_glucose_name_me" contenteditable="true" spellcheck="false"></div>
+        <input type="number" inputmode="numeric" id="gluMe" class="glu-input glu-num" placeholder="—" oninput="updateGluPreview()">
+        <span class="glu-unit">mg/dL</span>
+        <span class="glu-badge" id="gluMeBadge"></span>
+      </div>
+      <div class="glu-row">
+        <div class="glu-lbl glu-name" id="text_glucose_name_spouse" contenteditable="true" spellcheck="false"></div>
+        <input type="number" inputmode="numeric" id="gluSpouse" class="glu-input glu-num" placeholder="—" oninput="updateGluPreview()">
+        <span class="glu-unit">mg/dL</span>
+        <span class="glu-badge" id="gluSpouseBadge"></span>
+      </div>
+      <div class="glu-row">
+        <span class="glu-lbl">메모</span>
+        <input type="text" id="gluMemo" class="glu-input wide" placeholder="선택 (예: 점심 비빔밥)" spellcheck="false">
+      </div>
+      <div class="auth-err" id="gluErr"></div>
+      <div class="glu-actions">
+        <button class="pv-btn" id="gluCancelEdit" style="display:none" onclick="resetGluForm(true)">취소</button>
+        <button class="glu-save" id="gluSaveBtn" onclick="saveGlucose()">기록 추가</button>
+      </div>
+    </div>
+
+    <div class="glu-hint">한 사람만 재도 괜찮아요. 기록을 누르면 수정할 수 있어요 (나중에 빠진 사람 수치 추가 등).</div>
+    <div id="gluList"></div>
+
+    <details class="glu-ref">
+      <summary>판정 기준 보기</summary>
+
+      <h4>공복 (8시간 이상 금식 후)</h4>
+      <table>
+        <tr><td>정상</td><td>100 미만</td></tr>
+        <tr><td>당뇨 전단계 (공복혈당장애)</td><td>100 – 125</td></tr>
+        <tr><td>당뇨 범위</td><td>126 이상</td></tr>
+      </table>
+
+      <h4>식후 2시간</h4>
+      <table>
+        <tr><td>정상</td><td>140 미만</td></tr>
+        <tr><td>당뇨 전단계 (내당능장애)</td><td>140 – 199</td></tr>
+        <tr><td>당뇨 범위</td><td>200 이상</td></tr>
+      </table>
+
+      <h4>식후 바로 · 식후 30분 · 중간타임 (참고용)</h4>
+      <table>
+        <tr><td>정상 범위</td><td>140 미만</td></tr>
+        <tr><td>높음·주의</td><td>140 – 199</td></tr>
+        <tr><td>매우 높음</td><td>200 이상</td></tr>
+      </table>
+      <p>이 시점들은 공식 진단기준이 없습니다. 건강한 사람의 식후 혈당은 식사 시작 약 1시간 뒤 최고점에 이르고 대개 140을 넘지 않으며, 식사와 무관하게 잰 혈당이 200 이상이면서 다뇨·다음·체중감소 같은 증상이 있으면 당뇨 진단기준에 해당한다는 점을 기준으로 삼았습니다.</p>
+
+      <h4>저혈당 (모든 시점 공통)</h4>
+      <table>
+        <tr><td>저혈당</td><td>70 미만</td></tr>
+        <tr><td>심한 저혈당</td><td>54 미만</td></tr>
+      </table>
+
+      <p>가정용 혈당측정기(손끝 채혈)는 병원 정맥혈 검사와 차이가 있을 수 있고, 한 번의 수치로 진단하지 않습니다 (병원에서는 다른 날 반복 검사). 식후 2시간 기준은 원래 75g 포도당 부하검사 기준이라 일반 식사에 적용하면 참고치입니다. 이미 당뇨 치료 중이라면 목표 범위가 다르므로 주치의 기준을 따르세요.</p>
+      <p>출처:
+        <a href="https://synapse.koreamed.org/upload/synapsexml/0178jkd/pdf/jkd-2025-26-1-10.pdf">대한당뇨병학회지 2025 (당뇨병 진단)</a> ·
+        <a href="https://diabetesjournals.org/care/article/49/Supplement_1/S27/163926/2-Diagnosis-and-Classification-of-Diabetes">ADA Standards of Care 2026</a> ·
+        <a href="https://diabetesjournals.org/care/article/24/4/775/23438/Postprandial-Blood-Glucose">ADA 식후혈당 합의문</a> ·
+        <a href="https://diabetes.org/sites/default/files/2025-04/Severe-Hypoglycemia-Patient-2025-4-22-25.pdf">ADA 저혈당 단계</a>
+      </p>
+    </details>
   </div>
 
   <!-- 라이트박스 -->
@@ -912,7 +1092,8 @@
     const TEXT_KEYS = [
       'title', 'today', 'week', 'year', 'routine',
       'label_today', 'label_week', 'label_year', 'label_routine',
-      'title_progress', 'title_exercise', 'title_study', 'title_money', 'title_shortcuts', 'title_backup'
+      'title_progress', 'title_exercise', 'title_study', 'title_money', 'title_shortcuts', 'title_backup',
+      'glucose_name_me', 'glucose_name_spouse'
     ];
     const TEXT_DEFAULTS = {
       title: '내 스케줄 대시보드',
@@ -925,7 +1106,9 @@
       title_study: '공부루틴',
       title_money: '돈벌자루틴',
       title_shortcuts: '바로가기',
-      title_backup: '데이터 백업'
+      title_backup: '데이터 백업',
+      glucose_name_me: '나',
+      glucose_name_spouse: '배우자'
     };
     let texts = lsGet('texts', {});
     // 초기 Supabase 로딩이 끝나기 전에 사용자가 직접 수정한 텍스트 키를
@@ -1171,7 +1354,11 @@
     }
 
     async function deleteShortcut(id) {
-      if (!confirm('이 항목을 삭제할까요?')) return;
+      const target = pages.find(x => x.id === id);
+      const msg = (target && target.type === 'glucose')
+        ? '혈당 일지 바로가기를 목록에서 삭제할까요?\n(기록된 혈당 데이터 자체는 지워지지 않아요)'
+        : '이 항목을 삭제할까요?';
+      if (!confirm(msg)) return;
       pages = pages.filter(x => x.id !== id);
       lsSet('pages', pages);
       renderPages();
@@ -1235,6 +1422,7 @@
     function openPage(id) {
       const p = pages.find(x => x.id === id);
       if (!p) return;
+      if (p.type === 'glucose') { openGlucose(p); return; }
       currentPageId = id;
       document.getElementById('pageViewTitle').textContent = p.title || '';
       document.getElementById('pageContent').innerHTML = p.content || '';
@@ -1317,6 +1505,358 @@
     document.getElementById('pageViewTitle').addEventListener('blur', savePageTitle);
     bindEnterAsBlur(document.getElementById('pageViewTitle'));
     document.getElementById('pageContent').addEventListener('blur', savePageContent);
+
+    // ════════════════════════════════════════════════════════
+    //  혈당 일지
+    //  - 기록은 Supabase glucose_logs 테이블(로그인한 본인만 접근)에
+    //    저장되고, 이 기기에도 캐시(mydash_glucose)됩니다.
+    //  - 판정은 저장하지 않고 화면에서 매번 계산합니다(기준이 바뀌어도
+    //    이 함수만 고치면 과거 기록 판정도 같이 바뀜).
+    //  - 판정 기준: 대한당뇨병학회 / ADA Standards of Care 2026
+    //    공복: <100 정상, 100–125 당뇨 전단계, ≥126 당뇨 범위
+    //    식후 2시간: <140 정상, 140–199 당뇨 전단계, ≥200 당뇨 범위
+    //    식후 바로/30분/중간타임: 공식 기준 없음 → 참고용
+    //      (건강인 식후 최고치 대개 <140, 수시혈당 ≥200은 당뇨 의심)
+    //    저혈당: <70, 심한 저혈당: <54 (ADA)
+    // ════════════════════════════════════════════════════════
+    const GLU_TIMINGS = [
+      { key: 'fasting',     label: '공복' },
+      { key: 'right_after', label: '식후 바로' },
+      { key: 'after_30m',   label: '식후 30분' },
+      { key: 'after_2h',    label: '식후 2시간' },
+      { key: 'between',     label: '중간타임' },
+    ];
+    const GLU_TIMING_LABEL = Object.fromEntries(GLU_TIMINGS.map(t => [t.key, t.label]));
+    const GLU_OFFICIAL = new Set(['fasting', 'after_2h']);
+
+    function classifyGlucose(timing, v) {
+      if (v === null || v === undefined || v === '' || isNaN(v)) return null;
+      v = Number(v);
+      if (v < 54) return { level: 'low', label: '심한 저혈당' };
+      if (v < 70) return { level: 'low', label: '저혈당' };
+      if (timing === 'fasting') {
+        if (v < 100) return { level: 'ok', label: '정상' };
+        if (v < 126) return { level: 'warn', label: '당뇨 전단계' };
+        return { level: 'high', label: '당뇨 범위' };
+      }
+      if (timing === 'after_2h') {
+        if (v < 140) return { level: 'ok', label: '정상' };
+        if (v < 200) return { level: 'warn', label: '당뇨 전단계' };
+        return { level: 'high', label: '당뇨 범위' };
+      }
+      if (v < 140) return { level: 'ok', label: '정상 범위' };
+      if (v < 200) return { level: 'warn', label: '높음·주의' };
+      return { level: 'high', label: '매우 높음' };
+    }
+
+    let glucoseLogs = lsGet('glucose', []);
+    let gluTiming = null;
+    let gluEditingId = null;
+    let gluLoading = false;
+
+    function gluName(who) {
+      const key = who === 'me' ? 'glucose_name_me' : 'glucose_name_spouse';
+      const v = texts[key] !== undefined ? texts[key] : TEXT_DEFAULTS[key];
+      return (v || '').trim() || (who === 'me' ? '나' : '배우자');
+    }
+
+    function renderGluChips() {
+      const wrap = document.getElementById('gluTimingChips');
+      wrap.innerHTML = '';
+      GLU_TIMINGS.forEach(t => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'glu-chip' + (gluTiming === t.key ? ' on' : '');
+        b.textContent = t.label;
+        b.onclick = () => { gluTiming = t.key; renderGluChips(); updateGluPreview(); };
+        wrap.appendChild(b);
+      });
+    }
+
+    function setGluBadge(el, cls) {
+      el.className = 'glu-badge' + (cls ? ' lv-' + cls.level : '');
+      el.textContent = cls ? cls.label : '';
+    }
+
+    // 빈칸이면 null, 숫자가 아니면 NaN
+    function parseGluValue(id) {
+      const raw = document.getElementById(id).value.trim();
+      if (raw === '') return null;
+      const n = Number(raw);
+      return Number.isFinite(n) ? Math.round(n) : NaN;
+    }
+
+    function updateGluPreview() {
+      const me = parseGluValue('gluMe');
+      const sp = parseGluValue('gluSpouse');
+      setGluBadge(document.getElementById('gluMeBadge'), gluTiming ? classifyGlucose(gluTiming, me) : null);
+      setGluBadge(document.getElementById('gluSpouseBadge'), gluTiming ? classifyGlucose(gluTiming, sp) : null);
+      document.getElementById('gluNote').textContent =
+        (gluTiming && !GLU_OFFICIAL.has(gluTiming))
+          ? '이 시점은 공식 진단기준이 없어 참고용으로 판정해요'
+          : '';
+    }
+
+    function resetGluForm(keepDate) {
+      gluEditingId = null;
+      gluTiming = null;
+      const dateEl = document.getElementById('gluDate');
+      if (!keepDate || !dateEl.value) dateEl.value = todayStr();
+      document.getElementById('gluMe').value = '';
+      document.getElementById('gluSpouse').value = '';
+      document.getElementById('gluMemo').value = '';
+      document.getElementById('gluErr').textContent = '';
+      document.getElementById('gluSaveBtn').textContent = '기록 추가';
+      document.getElementById('gluCancelEdit').style.display = 'none';
+      document.getElementById('gluFormTitle').textContent = '새 기록';
+      document.getElementById('gluForm').classList.remove('editing');
+      renderGluChips();
+      updateGluPreview();
+      renderGluList();
+    }
+
+    function formatGluDate(s) {
+      const [y, m, d] = (s || '').split('-').map(Number);
+      if (!y) return s || '';
+      const days = ['일','월','화','수','목','금','토'];
+      const dow = days[new Date(y, m - 1, d).getDay()];
+      return (y !== new Date().getFullYear() ? `${y}년 ` : '') + `${m}월 ${d}일 (${dow})`;
+    }
+
+    function gluValueCell(timing, v) {
+      const cell = document.createElement('div');
+      cell.className = 'glu-val';
+      if (v === null || v === undefined) {
+        const e = document.createElement('span');
+        e.className = 'glu-empty';
+        e.textContent = '—';
+        cell.appendChild(e);
+        return cell;
+      }
+      const num = document.createElement('span');
+      num.className = 'glu-val-num';
+      num.textContent = v;
+      cell.appendChild(num);
+      const c = classifyGlucose(timing, v);
+      if (c) {
+        const b = document.createElement('span');
+        setGluBadge(b, c);
+        cell.appendChild(b);
+      }
+      return cell;
+    }
+
+    function renderGluList() {
+      const wrap = document.getElementById('gluList');
+      wrap.innerHTML = '';
+      if (!glucoseLogs.length) {
+        const empty = document.createElement('div');
+        empty.className = 'glu-emptystate';
+        empty.textContent = '아직 기록이 없어요. 위에서 첫 기록을 추가해보세요.';
+        wrap.appendChild(empty);
+        return;
+      }
+      const head = document.createElement('div');
+      head.className = 'glu-grid glu-head';
+      ['시점', gluName('me'), gluName('spouse'), ''].forEach(txt => {
+        const s = document.createElement('span');
+        s.textContent = txt;
+        head.appendChild(s);
+      });
+      wrap.appendChild(head);
+
+      // 날짜는 최신순, 같은 날 안에서는 입력한 순서대로
+      const sorted = [...glucoseLogs].sort((a, b) =>
+        (b.measured_on || '').localeCompare(a.measured_on || '') ||
+        (a.created_at || '').localeCompare(b.created_at || ''));
+
+      let lastDate = null;
+      sorted.forEach(r => {
+        if (r.measured_on !== lastDate) {
+          lastDate = r.measured_on;
+          const dh = document.createElement('div');
+          dh.className = 'glu-date';
+          dh.textContent = formatGluDate(r.measured_on);
+          wrap.appendChild(dh);
+        }
+        const item = document.createElement('div');
+        item.className = 'glu-item' + (r.id === gluEditingId ? ' editing' : '');
+        const grid = document.createElement('div');
+        grid.className = 'glu-grid';
+        const t = document.createElement('span');
+        t.className = 'glu-timing';
+        t.textContent = GLU_TIMING_LABEL[r.timing] || r.timing;
+        grid.appendChild(t);
+        grid.appendChild(gluValueCell(r.timing, r.me_value));
+        grid.appendChild(gluValueCell(r.timing, r.spouse_value));
+        const del = document.createElement('button');
+        del.className = 'shortcut-del';
+        del.textContent = '✕';
+        del.onclick = (e) => { e.stopPropagation(); deleteGlucose(r.id); };
+        grid.appendChild(del);
+        item.appendChild(grid);
+        if (r.memo) {
+          const memo = document.createElement('div');
+          memo.className = 'glu-memo';
+          memo.textContent = r.memo;
+          item.appendChild(memo);
+        }
+        if (SUPA_READY && !isRemoteId(r.id)) {
+          const p = document.createElement('div');
+          p.className = 'glu-pending';
+          p.textContent = '서버 저장 대기 중 (다음에 열 때 자동 재시도)';
+          item.appendChild(p);
+        }
+        item.onclick = () => startEditGlucose(r.id);
+        wrap.appendChild(item);
+      });
+    }
+
+    function openGlucose(p) {
+      document.getElementById('glucoseTitle').textContent = p.title || '혈당 일지';
+      resetGluForm(false);
+      const view = document.getElementById('glucoseView');
+      view.classList.add('on');
+      view.scrollTop = 0;
+      loadGlucose();
+    }
+
+    function closeGlucose() {
+      document.getElementById('glucoseView').classList.remove('on');
+    }
+
+    async function loadGlucose() {
+      if (!SUPA_READY || gluLoading) return;
+      gluLoading = true;
+      setStatus('saving');
+      try {
+        // 1) 오프라인 등으로 서버에 못 올라간 기록(문자열 id)이 있으면 먼저 올립니다.
+        const pending = glucoseLogs.filter(r => !isRemoteId(r.id));
+        for (const r of pending) {
+          const { id, ...rest } = r;
+          const { data, error } = await db.from('glucose_logs').insert(rest).select().single();
+          if (!error && data) glucoseLogs = glucoseLogs.map(x => x.id === id ? data : x);
+        }
+        // 2) 서버 목록을 기준으로 맞춥니다 (다른 기기에서 지운 기록은 여기서 사라짐).
+        const { data, error } = await db.from('glucose_logs').select('*')
+          .order('measured_on', { ascending: false })
+          .order('created_at', { ascending: true });
+        if (error) throw error;
+        const stillPending = glucoseLogs.filter(r => !isRemoteId(r.id));
+        glucoseLogs = (data || []).concat(stillPending);
+        lsSet('glucose', glucoseLogs);
+        renderGluList();
+        setStatus('saved');
+      } catch (e) {
+        console.error('혈당 기록 로드 실패:', e);
+        setStatus('error', errMsg(e));
+      } finally {
+        gluLoading = false;
+      }
+    }
+
+    function startEditGlucose(id) {
+      const r = glucoseLogs.find(x => x.id === id);
+      if (!r) return;
+      gluEditingId = id;
+      gluTiming = r.timing;
+      document.getElementById('gluDate').value = r.measured_on || todayStr();
+      document.getElementById('gluMe').value = r.me_value ?? '';
+      document.getElementById('gluSpouse').value = r.spouse_value ?? '';
+      document.getElementById('gluMemo').value = r.memo || '';
+      document.getElementById('gluErr').textContent = '';
+      document.getElementById('gluSaveBtn').textContent = '수정 저장';
+      document.getElementById('gluCancelEdit').style.display = '';
+      document.getElementById('gluFormTitle').textContent = '기록 수정 중';
+      document.getElementById('gluForm').classList.add('editing');
+      renderGluChips();
+      updateGluPreview();
+      renderGluList();
+      document.getElementById('glucoseView').scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    async function saveGlucose() {
+      const errEl = document.getElementById('gluErr');
+      errEl.textContent = '';
+      const date = document.getElementById('gluDate').value;
+      const me = parseGluValue('gluMe');
+      const sp = parseGluValue('gluSpouse');
+      const memo = document.getElementById('gluMemo').value.trim();
+      if (!date) { errEl.textContent = '날짜를 선택해주세요.'; return; }
+      if (!gluTiming) { errEl.textContent = '측정 시점을 선택해주세요.'; return; }
+      if (me === null && sp === null) { errEl.textContent = '한 사람 이상의 수치를 입력해주세요.'; return; }
+      const bad = v => v !== null && (isNaN(v) || v < 20 || v > 600);
+      if (bad(me) || bad(sp)) { errEl.textContent = '수치는 20~600 사이 숫자로 입력해주세요.'; return; }
+
+      const fields = { measured_on: date, timing: gluTiming, me_value: me, spouse_value: sp, memo };
+
+      // 수정
+      if (gluEditingId !== null) {
+        const editId = gluEditingId;
+        const row = glucoseLogs.find(r => r.id === editId);
+        if (row) Object.assign(row, fields);
+        lsSet('glucose', glucoseLogs);
+        resetGluForm(true);
+        if (SUPA_READY && isRemoteId(editId)) {
+          setStatus('saving');
+          try {
+            const { error } = await db.from('glucose_logs').update(fields).eq('id', editId);
+            if (error) throw error;
+            setStatus('saved');
+          } catch (e) { console.error(e); setStatus('error', errMsg(e)); }
+        } else {
+          setStatus(SUPA_READY ? 'saved' : 'local');
+        }
+        return;
+      }
+
+      // 새 기록
+      const newRow = { ...fields, created_at: new Date().toISOString() };
+      if (SUPA_READY) {
+        setStatus('saving');
+        try {
+          const { data, error } = await db.from('glucose_logs').insert(newRow).select().single();
+          if (error) throw error;
+          glucoseLogs.push(data);
+          setStatus('saved');
+        } catch (e) {
+          console.error(e);
+          glucoseLogs.push({ id: uid(), ...newRow });
+          setStatus('error', errMsg(e));
+        }
+      } else {
+        glucoseLogs.push({ id: uid(), ...newRow });
+        setStatus('local');
+      }
+      lsSet('glucose', glucoseLogs);
+      resetGluForm(true);
+    }
+
+    async function deleteGlucose(id) {
+      if (!confirm('이 기록을 삭제할까요?')) return;
+      glucoseLogs = glucoseLogs.filter(r => r.id !== id);
+      lsSet('glucose', glucoseLogs);
+      if (gluEditingId === id) resetGluForm(true);
+      else renderGluList();
+      if (SUPA_READY && isRemoteId(id)) {
+        setStatus('saving');
+        try {
+          const { error } = await db.from('glucose_logs').delete().eq('id', id);
+          if (error) throw error;
+          setStatus('saved');
+        } catch (e) { console.error(e); setStatus('error', errMsg(e)); }
+      } else {
+        setStatus(SUPA_READY ? 'saved' : 'local');
+      }
+    }
+
+    // 이름(나/배우자)을 바꾸면 목록 머리글도 바로 갱신
+    ['text_glucose_name_me', 'text_glucose_name_spouse'].forEach(id => {
+      document.getElementById(id).addEventListener('blur', () => setTimeout(renderGluList, 0));
+    });
+    document.getElementById('gluMemo').addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); saveGlucose(); }
+    });
 
     // ── 이미지 업로드 / 삭제 (Supabase Storage: dashboard_images 버킷, 미설정 시 base64로 대체) ──
     function compressToBlob(blob) {
@@ -1684,6 +2224,7 @@
         routines: lsGet('routines', []),
         checks: lsGet('checks', []),
         pages: lsGet('pages', []),
+        glucose: lsGet('glucose', []),
       };
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
@@ -1696,7 +2237,18 @@
       URL.revokeObjectURL(url);
     }
 
-    async function syncAllToSupabase() {
+    async function syncAllToSupabase(opts = {}) {
+      // glucose_logs: 백업 파일에 혈당 기록이 들어있을 때만 전체 교체
+      // (혈당 기능 이전의 옛 백업을 불러와도 혈당 기록이 지워지지 않게)
+      if (opts.glucose) {
+        await db.from('glucose_logs').delete().gte('id', 0);
+        if (glucoseLogs.length) {
+          const rows = glucoseLogs.map(({ id, user_id, ...rest }) => rest);
+          const { data, error } = await db.from('glucose_logs').insert(rows).select();
+          if (!error && data) { glucoseLogs = data; lsSet('glucose', glucoseLogs); }
+        }
+      }
+
       // dashboard_texts: 전체 upsert
       const textRows = Object.keys(texts).map(k => ({ id: k, content: texts[k] }));
       if (textRows.length) await db.from('dashboard_texts').upsert(textRows);
@@ -1745,6 +2297,8 @@
         if (data.routines) { routines = data.routines; lsSet('routines', routines); }
         if (data.checks) { routineChecks = data.checks; lsSet('checks', routineChecks); }
         if (data.pages) { pages = data.pages; lsSet('pages', pages); }
+        const hasGlucose = Array.isArray(data.glucose);
+        if (hasGlucose) { glucoseLogs = data.glucose; lsSet('glucose', glucoseLogs); }
 
         renderProgress();
         renderRoutines();
@@ -1753,7 +2307,7 @@
 
         if (SUPA_READY) {
           setStatus('saving');
-          await syncAllToSupabase();
+          await syncAllToSupabase({ glucose: hasGlucose });
           setStatus('saved');
         } else {
           setStatus('local');
