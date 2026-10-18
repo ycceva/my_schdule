@@ -524,14 +524,6 @@
     <div class="routine-list" id="list_exercise"></div>
   </div>
 
-  <!-- 공부루틴 -->
-  <div class="section">
-    <div class="section-title-row">
-      <div class="section-title" id="text_title_study" contenteditable="true" spellcheck="false"></div>
-    </div>
-    <div class="routine-list" id="list_study"></div>
-  </div>
-
   <!-- 돈벌자루틴 -->
   <div class="section">
     <div class="section-title-row">
@@ -768,7 +760,6 @@
     // ════════════════════════════════════════════════════════
     const CATS = [
       { key: 'exercise', label: '운동' },
-      { key: 'study',    label: '공부' },
       { key: 'money',    label: '돈벌자' },
     ];
     const PERIODS = [
@@ -781,7 +772,7 @@
     // 기본 시드 (Supabase 미설정 / localStorage 비어있을 때)
     function defaultRoutines() {
       const mk = (category, n) => Array.from({ length: n }, (_, i) => ({ id: uid(), category, label: '', sort_order: i }));
-      return [...mk('exercise', 5), ...mk('study', 4), ...mk('money', 3)];
+      return [...mk('exercise', 5), ...mk('money', 3)];
     }
 
     let routines = lsGet('routines', null) || defaultRoutines();       // {id, category, label, sort_order}
@@ -1092,7 +1083,7 @@
     const TEXT_KEYS = [
       'title', 'today', 'week', 'year', 'routine',
       'label_today', 'label_week', 'label_year', 'label_routine',
-      'title_progress', 'title_exercise', 'title_study', 'title_money', 'title_shortcuts', 'title_backup',
+      'title_progress', 'title_exercise', 'title_money', 'title_shortcuts', 'title_backup',
       'glucose_name_me', 'glucose_name_spouse'
     ];
     const TEXT_DEFAULTS = {
@@ -1103,7 +1094,6 @@
       label_routine: '루틴',
       title_progress: '26년 성장 진행률',
       title_exercise: '운동루틴',
-      title_study: '공부루틴',
       title_money: '돈벌자루틴',
       title_shortcuts: '바로가기',
       title_backup: '데이터 백업',
