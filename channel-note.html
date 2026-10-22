@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>채널 기획노트</title>
+
+<!-- 홈 화면 / Dock 앱 설정 -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="기획노트">
+<meta name="theme-color" content="#fdfae6">
+<link rel="apple-touch-icon" sizes="180x180" href="note-icon-180.png">
+<link rel="icon" type="image/png" sizes="512x512" href="note-icon-512.png">
+
+<style>
+  /* ════════════════════════════════════════════════════════
+     연한 노란 연습지 + 시스템 고딕, 한눈에 보이게 촘촘하게
+     ════════════════════════════════════════════════════════ */
+  :root {
+    --paper: #fdfae6;
+    --paper-2: #f8f2c8;
+    --rule: rgba(80, 140, 200, 0.10);
+    --margin-red: rgba(214, 72, 72, 0.28);
+    --ink: #1c2333;
+    --ink-soft: #5a6275;
+    --muted: #8a8670;
+    --line: rgba(28, 35, 51, 0.16);
+    --branch: rgba(28, 35, 51, 0.28);
+    --blue: #2756b8;
+    --red: #cc3b3b;
+    --font: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Pretendard', 'Segoe UI', 'Malgun Gothic', sans-serif;
+    --margin: 18px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    font-family: var(--font);
+    font-size: 13.5px;
+    line-height: 1.5;
+    color: var(--ink);
+    background: #ece6c4;
+    min-height: 100vh;
+  }
+  .pad {
+    max-width: 1000px; margin: 0 auto; min-height: 100vh;
+    background-color: var(--paper);
+    background-image:
+      linear-gradient(to right, transparent var(--margin), var(--margin-red) var(--margin), var(--margin-red) calc(var(--margin) + 1px), transparent calc(var(--margin) + 1px)),
+      repeating-linear-gradient(to bottom, transparent 0, transparent 21px, var(--rule) 21px, var(--rule) 22px);
+    padding-bottom: 40px;
+  }
+
+  /* ── 상단: 제목 + 탭 한 덩어리 (스크롤해도 고정) ── */
+  .top {
+    position: sticky; top: 0; z-index: 20;
+    background: var(--paper-2);
+    border-bottom: 1px solid var(--line);
+    padding: env(safe-area-inset-top) 10px 0 calc(var(--margin) + 8px);
+  }
+  .top-row { display: flex; align-items: center; gap: 8px; padding: 6px 0 4px; }
+  .top-row h1 { font-size: 15px; font-weight: 700; }
+  .status { font-size: 11px; color: var(--muted); margin-left: auto; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .status.err { color: var(--red); }
+  .tabs { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab {
+    font-size: 13px; padding: 5px 10px; white-space: nowrap; cursor: pointer;
+    color: var(--ink-soft); border-bottom: 2px solid transparent;
+  }
+  .tab.on { color: var(--ink); font-weight: 700; border-bottom-color: var(--ink); }
+  .tab .count { font-size: 10.5px; background: var(--red); color: #fff; border-radius: 8px; padding: 0 5px; margin-left: 3px; font-weight: 400; }
+
+  .content { padding: 10px 10px 0 calc(var(--margin) + 8px); }
+
+  .btn {
+    font-family: var(--font); font-size: 12px; line-height: 1.3;
+    background: rgba(255,255,255,0.7); border: 1px solid var(--line); color: var(--ink);
+    border-radius: 5px; padding: 3px 8px; cursor: pointer; white-space: nowrap;
+  }
+  .btn:hover { background: #fff; }
+  .btn.primary { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .btn.danger { color: var(--red); }
+  .btn.ghost { background: none; border-color: transparent; color: var(--muted); padding: 1px 4px; }
+  .btn.ghost:hover { color: var(--ink); }
+  .btn:disabled { opacity: 0.5; }
+
+  textarea, input[type=text], input[type=email], input[type=password] {
+    width: 100%; font-family: var(--font); font-size: 13.5px; line-height: 1.5; color: var(--ink);
+    background: #fff; border: 1px solid var(--line); border-radius: 5px; padding: 5px 8px; outline: none;
+  }
+  textarea { resize: vertical; }
+  textarea:focus, input:focus { border-color: var(--blue); }
+
+  /* 화면에서 바로 고치는 칸 */
+  [contenteditable] { outline: none; border-radius: 3px; white-space: pre-wrap; word-break: keep-all; overflow-wrap: anywhere; }
+  [contenteditable]:hover { background: rgba(39,86,184,0.05); }
+  [contenteditable]:focus { background: #fff; box-shadow: 0 0 0 1.5px var(--blue); }
+  [contenteditable]:empty::before { content: attr(data-ph); color: #b8b49a; }
+
+  .label { display: flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 700; color: var(--muted); margin: 0 0 4px; }
+
+  /* ── 표 묶음 ── */
+  .block { margin-bottom: 16px; scroll-margin-top: 80px; }
+  .block-head { display: flex; align-items: center; gap: 6px; border-bottom: 1.5px solid var(--ink); padding-bottom: 2px; margin-bottom: 4px; }
+  .block-head .no { font-size: 11px; font-weight: 700; color: #fff; background: var(--ink); border-radius: 3px; padding: 0 5px; flex-shrink: 0; }
+  .block-head h2 { font-size: 14.5px; font-weight: 700; flex: 1; min-width: 0; padding: 0 3px; }
+  .block-head .meta { font-size: 11px; color: var(--muted); }
+  .block.flash { animation: flash 1.2s; }
+  @keyframes flash { 0%, 40% { background: rgba(39,86,184,0.12); } 100% { background: transparent; } }
+
+  .tbl-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table.et { border-collapse: collapse; font-size: 12.5px; width: 100%; background: rgba(255,255,255,0.75); }
+  .et th, .et td { border: 1px solid var(--line); padding: 3px 6px; text-align: left; vertical-align: top; line-height: 1.45; }
+  .et th { background: #e9e4c6; font-weight: 700; }
+  .et th.wide, .et td.wide { min-width: 120px; }
+  .et th.mid, .et td.mid { width: 150px; min-width: 90px; }
+  .et td.mid { vertical-align: middle; }
+  @media (max-width: 640px) { .et th.mid, .et td.mid { width: 92px; } }
+  .et th.narrow, .et td.narrow { width: 1%; white-space: nowrap; }
+  .et .narrow [contenteditable] { white-space: nowrap; }
+  .et td:first-child { font-weight: 600; }
+  .et [contenteditable] { display: block; min-height: 18px; }
+  .et .rx { width: 1%; border: none; background: transparent; padding: 2px; }
+  .tbl-tools { display: flex; gap: 4px; align-items: center; margin-top: 4px; }
+  .tbl-tools .hint { margin-left: auto; }
+  .x { opacity: 0; }
+  tr:hover .x, .todo:hover .x, .decision:hover .x, .block-head:hover .x { opacity: 1; }
+  @media (hover: none) { .x { opacity: 0.45; } }
+
+  /* ── 체크 사항 · 결정 이력 ── */
+  .todo, .decision { display: flex; gap: 6px; align-items: flex-start; font-size: 13px; padding: 2px 0; border-bottom: 1px dotted var(--line); }
+  .todo input { margin-top: 4px; accent-color: var(--ink); flex-shrink: 0; }
+  .todo .t, .decision .t { flex: 1; min-width: 0; }
+  .todo.done .t { text-decoration: line-through; color: var(--muted); }
+  .decision { font-size: 12.5px; }
+  .decision .d { flex-shrink: 0; width: 38px; color: var(--red); font-weight: 600; }
+  .add-row { display: flex; gap: 4px; margin-top: 4px; }
+  .add-row input { font-size: 12.5px; padding: 3px 6px; }
+
+  /* ── 아이디어 ── */
+  .composer { background: rgba(255,255,255,0.65); border: 1px solid var(--line); border-radius: 6px; padding: 7px; margin-bottom: 12px; }
+  .chips { display: flex; gap: 4px; flex-wrap: wrap; }
+  .chip { font-size: 12px; border: 1px solid var(--line); background: #fff; border-radius: 12px; padding: 1px 9px; cursor: pointer; color: var(--ink-soft); }
+  .chip.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .composer textarea { margin-top: 6px; min-height: 130px; }
+  .composer-foot { display: flex; justify-content: space-between; align-items: center; margin-top: 5px; }
+  .hint { font-size: 11px; color: var(--muted); }
+  .day { font-size: 12px; font-weight: 700; color: var(--ink-soft); margin: 10px 0 3px; }
+  .idea { background: rgba(255,255,255,0.6); border-left: 3px solid var(--blue); border-radius: 4px; padding: 4px 8px; margin: 4px 0; }
+  .idea.done { border-left-color: var(--line); }
+  .idea-meta { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--muted); }
+  .idea-meta .sp { flex: 1; }
+  .tag { font-size: 10.5px; border: 1px solid var(--line); border-radius: 8px; padding: 0 6px; }
+  .tag.new { background: var(--red); color: #fff; border-color: var(--red); }
+  .idea-body { white-space: pre-wrap; word-break: break-word; font-size: 13px; }
+  .idea-note { font-size: 12px; color: var(--blue); margin-top: 2px; }
+  .idea-note::before { content: '→ '; }
+  .editor { background: rgba(255,255,255,0.8); border: 1px solid var(--line); border-radius: 6px; padding: 6px; margin: 4px 0; }
+  .editor .row { display: flex; gap: 4px; justify-content: flex-end; margin-top: 5px; flex-wrap: wrap; }
+  .editor .row .left { margin-right: auto; }
+  .empty { color: var(--muted); font-size: 12.5px; padding: 2px 0; }
+  .foot { font-size: 11px; color: var(--muted); margin-top: 16px; }
+
+  .auth { max-width: 320px; margin: 30px auto; background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 14px; }
+  .auth h2 { font-size: 15px; margin-bottom: 4px; }
+  .auth input { margin-top: 6px; }
+  .auth .err { color: var(--red); font-size: 12px; min-height: 16px; margin-top: 4px; }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<div class="pad">
+  <div class="top">
+    <div class="top-row">
+      <button class="btn" onclick="location.href='./'">←</button>
+      <h1>채널 기획노트</h1>
+      <span class="status" id="status">불러오는 중…</span>
+    </div>
+    <div class="tabs" id="tabs"></div>
+  </div>
+
+  <!-- 로그인 (Dock·홈 화면 앱처럼 대시보드와 저장소가 분리된 경우에만 보임) -->
+  <div id="authView" class="hidden">
+    <div class="auth">
+      <h2>로그인</h2>
+      <div class="hint">스케줄 대시보드와 같은 계정</div>
+      <input type="email" id="authEmail" placeholder="이메일" autocomplete="email" spellcheck="false">
+      <input type="password" id="authPassword" placeholder="비밀번호" autocomplete="current-password">
+      <div class="err" id="authErr"></div>
+      <button class="btn primary" style="width:100%;padding:6px" onclick="login()">로그인</button>
+    </div>
+  </div>
+
+  <div id="app" class="hidden"><div class="content" id="view"></div></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+  // 대시보드(index.html)와 같은 Supabase 프로젝트·같은 로그인.
+  // 같은 주소(github.io/my_schdule) 안이라 대시보드에 로그인돼 있으면 바로 열림.
+  const SUPABASE_URL = 'https://ntouwtrgighdfxzfqssr.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im50b3V3dHJnaWdoZGZ4emZxc3NyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzOTc0NDgsImV4cCI6MjA5Njk3MzQ0OH0.bjg56Ae852qUhpD0vg0nF1OX2UVakFTJtiz-qbaHCk4';
+  const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  const STAGES = [
+    { id: 'topic', label: '① 주제정하기' },
+    { id: 'craft', label: '② 영상지식기술' },
+    { id: 'ai',    label: '③ AI기술' },
+  ];
+  const STAGE_SHORT = { topic: '주제', craft: '영상지식', ai: 'AI기술', none: '미분류' };
+  const TODO_TITLE = '체크 사항';
+
+  const MAX_DECISIONS = 5;   // 결정 변경 이력은 최근 5개만 (넘으면 오래된 것부터 삭제)
+
+  // notes[stage] = { content, updated_at(서버 문자열 그대로), exists }
+  // content = {
+  //   blocks: [{ title, cols: [{ n: 열 이름, w: 'mid'|'wide'|'narrow' }], rows: [[칸, …], …] }],
+  //   todos: [{ text, done }],          ← 체크 사항 (클로드·나 둘 다 추가)
+  //   decisions: [{ date, text }]       ← 결정 변경 이력
+  // }
+  const notes = {};
+  let ideas = [];
+  let tab = 'topic';
+  let composerStage = 'none';
+  let inboxFilter = 'new';
+  let editing = null;        // 아이디어 편집기 키 (편집 중엔 자동 새로고침 안 함)
+
+  function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+
+  function setStatus(text, err) {
+    const el = document.getElementById('status');
+    el.textContent = text;
+    el.classList.toggle('err', !!err);
+  }
+  function errMsg(e) {
+    if (!e) return '알 수 없는 오류';
+    if (typeof e === 'string') return e;
+    return [e.message, e.details, e.hint, e.code].filter(Boolean).join(' / ') || String(e);
+  }
+  function esc(s) {
+    return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+  // 결정 이력·아이디어 메모용: **굵게**만 지원
+  function inline(s) { return esc(s).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>'); }
+
+  // ════════════════════════════════════════════════════════
+  //  데이터
+  // ════════════════════════════════════════════════════════
+  function C(stage) {
+    if (!notes[stage]) notes[stage] = { content: {}, updated_at: null, exists: false };
+    const c = notes[stage].content;
+    c.blocks ||= []; c.todos ||= []; c.decisions ||= [];
+    c.blocks.forEach(b => { b.cols ||= []; b.rows ||= []; });
+    return c;
+  }
+
+  async function loadAll(silent) {
+    if (!silent) setStatus('불러오는 중…');
+    try {
+      const [n, d] = await Promise.all([
+        db.from('plan_notes').select('stage, content, updated_at'),
+        db.from('plan_ideas').select('*').order('created_at', { ascending: false }),
+      ]);
+      if (n.error) throw n.error;
+      if (d.error) throw d.error;
+      n.data.forEach(r => { notes[r.stage] = { content: r.content || {}, updated_at: r.updated_at, exists: true }; });
+      ideas = d.data;
+      setStatus('최신 상태');
+      render();
+    } catch (e) {
+      setStatus('불러오기 실패: ' + errMsg(e), true);
+    }
+  }
+
+  // 다른 기기·클로드가 그사이 고쳤으면 덮어쓰지 않고 새로 불러옴
+  let saving = Promise.resolve();
+  function saveNote(stage) { saving = saving.then(() => doSave(stage)); return saving; }
+  async function doSave(stage) {
+    const n = notes[stage];
+    setStatus('저장 중…');
+    const now = new Date().toISOString();
+    try {
+      if (n.exists) {
+        const { data, error } = await db.from('plan_notes')
+          .update({ content: n.content, updated_at: now })
+          .eq('stage', stage).eq('updated_at', n.updated_at)
+          .select('updated_at');
+        if (error) throw error;
+        if (!data.length) {
+          alert('다른 기기(또는 클로드)에서 먼저 수정된 내용이 있어요.\n최신 내용을 불러옵니다. 방금 고친 부분은 다시 적어 주세요.');
+          await loadAll();
+          return false;
+        }
+        n.updated_at = data[0].updated_at;
+      } else {
+        const { data, error } = await db.from('plan_notes')
+          .insert({ stage, content: n.content, updated_at: now })
+          .select('updated_at').single();
+        if (error) throw error;
+        n.exists = true; n.updated_at = data.updated_at;
+      }
+      setStatus('저장됨');
+      return true;
+    } catch (e) {
+      setStatus('저장 실패: ' + errMsg(e), true);
+      return false;
+    }
+  }
+
+  // ════════════════════════════════════════════════════════
+  //  화면
+  // ════════════════════════════════════════════════════════
+  function render() {
+    renderTabs();
+    const v = document.getElementById('view');
+    v.innerHTML = tab === 'ideas' ? ideasHtml() : stageHtml(tab);
+    v.querySelectorAll('[data-autofocus]').forEach(t => { t.focus(); if (t.setSelectionRange) t.setSelectionRange(t.value.length, t.value.length); });
+    if (tab === 'ideas') bindComposer();
+  }
+
+  function renderTabs() {
+    const newCount = ideas.filter(x => x.status === 'new').length;
+    const items = STAGES.map(s => [s.id, s.label]).concat([['ideas', '💡 아이디어']]);
+    document.getElementById('tabs').innerHTML = items.map(([id, label]) =>
+      `<div class="tab ${tab === id ? 'on' : ''}" onclick="go('${id}')">${label}${id === 'ideas' && newCount ? `<span class="count">${newCount}</span>` : ''}</div>`
+    ).join('');
+  }
+
+  function go(id) {
+    if (editing && !confirm('수정 중인 내용이 저장되지 않습니다. 이동할까요?')) return;
+    if (document.activeElement) document.activeElement.blur();   // 고치던 칸 먼저 저장
+    editing = null;
+    if (id === 'ideas' && tab !== 'ideas') composerStage = STAGE_SHORT[tab] ? tab : composerStage;
+    tab = id;
+    lsSet('cn_tab', id);
+    render();
+    window.scrollTo({ top: 0 });
+  }
+
+  // 편집 칸: data-k 종류 + 위치. 내용은 칸을 벗어날 때(blur) 저장
+  const ed = (k, attrs, val, ph) => `<div contenteditable="plaintext-only" data-k="${k}" ${attrs} data-ph="${esc(ph || '')}">${esc(val)}</div>`;
+
+  function stageHtml(stage) {
+    const c = C(stage);
+    let h = '';
+
+    // 표 묶음 — 칸을 눌러 바로 수정
+    c.blocks.forEach((b, bi) => {
+      h += `<div class="block" id="blk-${bi}"><div class="block-head"><span class="no">${bi + 1}</span>
+        <h2>${ed('bt', `data-b="${bi}"`, b.title, '표 제목')}</h2>
+        <button class="btn ghost x" onclick="delBlock(${bi})" title="표 삭제">✕</button></div>
+        <div class="tbl-wrap"><table class="et"><tr>`;
+      b.cols.forEach((col, ci) => { h += `<th class="${col.w || 'wide'}">${ed('h', `data-b="${bi}" data-c="${ci}"`, col.n, '열 이름')}</th>`; });
+      h += '<th class="rx"></th></tr>';
+      b.rows.forEach((r, ri) => {
+        h += '<tr>';
+        b.cols.forEach((col, ci) => { h += `<td class="${col.w || 'wide'}">${ed('c', `data-b="${bi}" data-r="${ri}" data-c="${ci}"`, r[ci] || '')}</td>`; });
+        h += `<td class="rx"><button class="btn ghost x" onclick="delRow(${bi},${ri})" title="행 삭제">✕</button></td></tr>`;
+      });
+      h += `</table></div><div class="tbl-tools"><button class="btn" onclick="addRow(${bi})">＋ 행</button>
+        <button class="btn" onclick="addCol(${bi})">＋ 열</button><span class="hint">칸 눌러 바로 수정 · Enter 줄바꿈 · 바깥 누르면 저장</span></div></div>`;
+    });
+    h += `<div style="margin:-8px 0 16px"><button class="btn ghost" onclick="addBlock()">＋ 표 추가</button></div>`;
+
+    // 체크 사항 — 다음 단계 핵심만. 글자 눌러 수정, 다 지우면 삭제
+    h += `<div class="block" id="blk-todo"><div class="block-head"><span class="no">✔</span><h2>${TODO_TITLE}</h2>
+      <span class="meta">${c.todos.filter(t => !t.done).length}개 남음</span></div>`;
+    c.todos.forEach((t, i) => {
+      h += `<div class="todo ${t.done ? 'done' : ''}"><input type="checkbox" ${t.done ? 'checked' : ''} onchange="toggleTodo(${i})">
+        <span class="t">${ed('todo', `data-i="${i}"`, t.text)}</span><button class="btn ghost x" onclick="delTodo(${i})">✕</button></div>`;
+    });
+    if (!c.todos.length) h += '<div class="empty">없음</div>';
+    h += `<div class="add-row"><input type="text" id="todoInput" placeholder="체크 사항 추가" onkeydown="if(event.key==='Enter'&&!event.isComposing)addTodo()"><button class="btn" onclick="addTodo()">추가</button></div></div>`;
+
+    // 결정 변경 이력 (최신이 위)
+    h += `<div class="block"><div class="block-head"><span class="no">⇄</span><h2>결정 변경 이력</h2></div>`;
+    c.decisions.slice().reverse().forEach((d, ri) => {
+      const i = c.decisions.length - 1 - ri;
+      h += `<div class="decision"><span class="d">${esc(shortDate(d.date))}</span><span class="t">${inline(d.text)}</span>
+        <button class="btn ghost x" onclick="delDecision(${i})">✕</button></div>`;
+    });
+    if (!c.decisions.length) h += '<div class="empty">기록 없음</div>';
+    h += `<div class="add-row"><input type="text" id="decInput" placeholder="A → B로 변경, 이유" onkeydown="if(event.key==='Enter'&&!event.isComposing)addDecision()"><button class="btn" onclick="addDecision()">기록</button></div></div>`;
+
+    if (notes[stage] && notes[stage].updated_at) h += `<div class="foot">마지막 수정 ${fmtDateTime(notes[stage].updated_at)}</div>`;
+    return h;
+  }
+
+  // ── 칸 수정 저장 (blur 때) ──
+  const view = document.getElementById('view');
+  view.addEventListener('keydown', e => {
+    const el = e.target.closest && e.target.closest('[data-k]');
+    if (!el) return;
+    // 표 칸은 Enter = 줄바꿈 (메모를 여러 줄로), ⌘/Ctrl+Enter = 끝내기. 나머지 칸은 Enter = 끝내기
+    const multi = el.dataset.k === 'c';
+    if (e.key === 'Enter' && !e.isComposing && (multi ? (e.metaKey || e.ctrlKey) : !e.shiftKey)) { e.preventDefault(); el.blur(); }
+    if (e.key === 'Escape') { el.textContent = el.dataset.orig ?? el.textContent; el.blur(); }
+  });
+  view.addEventListener('focusin', e => {
+    const el = e.target.closest && e.target.closest('[data-k]');
+    if (el) el.dataset.orig = el.textContent;
+  });
+  view.addEventListener('focusout', async e => {
+    const el = e.target.closest && e.target.closest('[data-k]');
+    if (!el || tab === 'ideas') return;
+    const val = el.innerText.replace(/\n+$/, '').trim();
+    if (val === (el.dataset.orig || '').trim()) return;
+    const c = C(tab), d = el.dataset, b = c.blocks[+d.b];
+    let rerender = true;
+    switch (d.k) {
+      case 'bt': b.title = val; rerender = false; break;
+      case 'c': b.rows[+d.r][+d.c] = val; rerender = false; break;
+      case 'h':
+        if (!val) {
+          if (!confirm(`'${b.cols[+d.c].n}' 열을 삭제할까요?`)) { el.textContent = d.orig; return; }
+          b.cols.splice(+d.c, 1); b.rows.forEach(r => r.splice(+d.c, 1));
+        } else b.cols[+d.c].n = val;
+        break;
+      case 'todo':
+        if (!val) c.todos.splice(+d.i, 1); else c.todos[+d.i].text = val;
+        break;
+    }
+    el.dataset.orig = val;
+    // 버튼(✕·＋)을 눌러서 칸을 벗어난 경우엔 다시 그리지 않음 — 그 버튼 클릭이 먹히도록
+    if (e.relatedTarget && /BUTTON|INPUT/.test(e.relatedTarget.tagName)) rerender = false;
+    if (await saveNote(tab) && rerender) {
+      // 다른 칸으로 옮겨 가는 중이면 그 칸에 커서를 되돌려 줌
+      const next = document.activeElement && document.activeElement.closest && document.activeElement.closest('[data-k]');
+      const key = next ? [...view.querySelectorAll('[data-k]')].indexOf(next) : -1;
+      render();
+      if (key >= 0) { const n = view.querySelectorAll('[data-k]')[key]; if (n) n.focus(); }
+    }
+  });
+  function focusCell(sel) {
+    const el = view.querySelector(sel);
+    if (!el) return;
+    el.focus(); el.scrollIntoView({ block: 'nearest' });
+  }
+
+  async function addRow(bi) {
+    const b = C(tab).blocks[bi];
+    b.rows.push(b.cols.map(() => ''));
+    if (await saveNote(tab)) { render(); focusCell(`[data-k="c"][data-b="${bi}"][data-r="${b.rows.length - 1}"][data-c="0"]`); }
+  }
+  async function delRow(bi, ri) {
+    const b = C(tab).blocks[bi];
+    if (b.rows[ri].some(Boolean) && !confirm(`'${b.rows[ri][0] || '이 행'}' 행을 삭제할까요?`)) return;
+    b.rows.splice(ri, 1);
+    if (await saveNote(tab)) render();
+  }
+  async function addCol(bi) {
+    const b = C(tab).blocks[bi];
+    b.cols.push({ n: '새 열', w: 'wide' }); b.rows.forEach(r => r.push(''));
+    if (await saveNote(tab)) { render(); focusCell(`[data-k="h"][data-b="${bi}"][data-c="${b.cols.length - 1}"]`); }
+  }
+  async function addBlock() {
+    const c = C(tab);
+    c.blocks.push({ title: '새 표', cols: [{ n: '항목', w: 'wide' }, { n: '내용', w: 'wide' }], rows: [['', '']] });
+    if (await saveNote(tab)) { render(); focusCell(`[data-k="bt"][data-b="${c.blocks.length - 1}"]`); }
+  }
+  async function delBlock(bi) {
+    if (!confirm(`'${C(tab).blocks[bi].title}' 표를 통째로 삭제할까요?`)) return;
+    C(tab).blocks.splice(bi, 1);
+    if (await saveNote(tab)) render();
+  }
+  async function addTodo() {
+    const text = document.getElementById('todoInput').value.trim();
+    if (!text) return;
+    C(tab).todos.push({ text, done: false });
+    if (await saveNote(tab)) { render(); document.getElementById('todoInput').focus(); }
+  }
+  async function toggleTodo(i) { const t = C(tab).todos[i]; t.done = !t.done; if (await saveNote(tab)) render(); }
+  async function delTodo(i) {
+    if (!confirm('이 체크 사항을 삭제할까요?')) return;
+    C(tab).todos.splice(i, 1);
+    if (await saveNote(tab)) render();
+  }
+  async function addDecision() {
+    const text = document.getElementById('decInput').value.trim();
+    if (!text) return;
+    const ds = C(tab).decisions;
+    ds.push({ date: todayStr(), text });
+    if (ds.length > MAX_DECISIONS) ds.splice(0, ds.length - MAX_DECISIONS);
+    if (await saveNote(tab)) render();
+  }
+  async function delDecision(i) {
+    if (!confirm('이 기록을 삭제할까요?')) return;
+    C(tab).decisions.splice(i, 1);
+    if (await saveNote(tab)) render();
+  }
+
+  // ════════════════════════════════════════════════════════
+  //  아이디어
+  // ════════════════════════════════════════════════════════
+  function ideasHtml() {
+    const opts = STAGES.map(s => [s.id, STAGE_SHORT[s.id]]).concat([['none', '미분류']]);
+    let h = `<div class="composer"><div class="chips">${opts.map(([id, l]) =>
+      `<span class="chip ${composerStage === id ? 'on' : ''}" onclick="pickStage('${id}')">${l}</span>`).join('')}</div>
+      <textarea id="ideaInput" placeholder="떠오른 생각 그대로. 여러 줄 OK.&#10;클로드 창에서 &quot;아이디어 정리해줘&quot; → 각 단계 기획에 반영">${esc(lsGet('cn_draft') || '')}</textarea>
+      <div class="composer-foot"><span class="hint">입력 중 자동 임시저장 · ⌘/Ctrl+Enter</span>
+      <button class="btn primary" id="ideaSave" onclick="addIdea()">남기기</button></div></div>`;
+    const list = inboxFilter === 'new' ? ideas.filter(x => x.status === 'new') : ideas;
+    h += `<div class="label">남긴 생각<span style="flex:1"></span><span class="chips">
+      <span class="chip ${inboxFilter === 'new' ? 'on' : ''}" onclick="setInbox('new')">정리 전</span>
+      <span class="chip ${inboxFilter === 'all' ? 'on' : ''}" onclick="setInbox('all')">전체</span></span></div>`;
+    h += list.length ? ideaListHtml(list) : `<div class="empty">${inboxFilter === 'new' ? '정리 전 생각 없음' : '아직 남긴 생각 없음'}</div>`;
+    return h;
+  }
+  function setInbox(f) { inboxFilter = f; render(); }
+  function pickStage(id) {
+    composerStage = id;
+    document.querySelectorAll('.composer .chip').forEach(el => el.classList.toggle('on', el.getAttribute('onclick') === `pickStage('${id}')`));
+  }
+
+  function ideaListHtml(list) {
+    let h = '', lastDay = '';
+    list.forEach(x => {
+      const day = fmtDay(x.created_at);
+      if (day !== lastDay) { h += `<div class="day">${day}</div>`; lastDay = day; }
+      h += `<div class="idea ${x.status}"><div class="idea-meta"><span>${fmtTime(x.created_at)}</span>
+        <span class="tag">${STAGE_SHORT[x.stage] || x.stage}</span>
+        <span class="tag ${x.status}">${x.status === 'new' ? '정리 전' : '정리됨'}</span><span class="sp"></span>`;
+      if (editing !== 'idea' + x.id) h += `<button class="btn ghost" onclick="editIdea(${x.id})">✎</button>`;
+      h += '</div>';
+      if (editing === 'idea' + x.id) {
+        h += `<div class="editor"><div class="chips" id="ideaStageChips">${['topic', 'craft', 'ai', 'none'].map(s =>
+          `<span class="chip ${x.stage === s ? 'on' : ''}" data-s="${s}" onclick="pickIdeaStage(this)">${STAGE_SHORT[s]}</span>`).join('')}</div>
+          <textarea id="ed_idea" style="margin-top:4px;min-height:110px" data-autofocus>${esc(x.body)}</textarea>
+          <div class="row"><button class="btn danger left" onclick="delIdea(${x.id})">삭제</button>
+          <button class="btn" onclick="toggleIdeaStatus(${x.id})">${x.status === 'new' ? '정리됨으로' : '정리 전으로'}</button>
+          <button class="btn" onclick="cancelEdit()">취소</button><button class="btn primary" onclick="saveIdea(${x.id})">저장</button></div></div>`;
+      } else {
+        h += `<div class="idea-body">${esc(x.body)}</div>`;
+        if (x.claude_note) h += `<div class="idea-note">${inline(x.claude_note)}</div>`;
+      }
+      h += '</div>';
+    });
+    return h;
+  }
+  function editIdea(id) {
+    if (editing && !confirm('수정 중인 내용이 저장되지 않습니다. 계속할까요?')) return;
+    editing = 'idea' + id; render();
+  }
+  function cancelEdit() { editing = null; render(); }
+
+  const ideaInput = () => document.getElementById('ideaInput');
+  function bindComposer() {
+    const t = ideaInput();
+    t.addEventListener('input', () => lsSet('cn_draft', t.value));
+    t.addEventListener('keydown', e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); addIdea(); } });
+  }
+  async function addIdea() {
+    const body = ideaInput().value.trim();
+    if (!body) { ideaInput().focus(); return; }
+    const btn = document.getElementById('ideaSave');
+    btn.disabled = true; setStatus('저장 중…');
+    try {
+      const { data, error } = await db.from('plan_ideas').insert({ stage: composerStage, body }).select().single();
+      if (error) throw error;
+      ideas.unshift(data);
+      lsSet('cn_draft', '');
+      setStatus('남김 ✓');
+      render();
+    } catch (e) {
+      setStatus('저장 실패: ' + errMsg(e), true);
+      alert('저장 실패. 적은 내용은 입력칸에 그대로 있어요.\n' + errMsg(e));
+      btn.disabled = false;
+    }
+  }
+  function pickIdeaStage(el) {
+    document.querySelectorAll('#ideaStageChips .chip').forEach(c => c.classList.toggle('on', c === el));
+  }
+  async function saveIdea(id) {
+    const body = document.getElementById('ed_idea').value.trim();
+    const stage = document.querySelector('#ideaStageChips .chip.on').dataset.s;
+    await patchIdea(id, { body, stage });
+  }
+  async function toggleIdeaStatus(id) {
+    const x = ideas.find(i => i.id === id);
+    await patchIdea(id, { status: x.status === 'new' ? 'done' : 'new' });
+  }
+  async function patchIdea(id, fields) {
+    setStatus('저장 중…');
+    const { data, error } = await db.from('plan_ideas').update({ ...fields, updated_at: new Date().toISOString() }).eq('id', id).select().single();
+    if (error) { setStatus('저장 실패: ' + errMsg(error), true); return; }
+    ideas = ideas.map(x => x.id === id ? data : x);
+    editing = null; setStatus('저장됨'); render();
+  }
+  async function delIdea(id) {
+    if (!confirm('이 생각을 삭제할까요?')) return;
+    const { error } = await db.from('plan_ideas').delete().eq('id', id);
+    if (error) { setStatus('삭제 실패: ' + errMsg(error), true); return; }
+    ideas = ideas.filter(x => x.id !== id);
+    editing = null; setStatus('삭제됨'); render();
+  }
+
+  // ── 날짜 표기 (한국 시간) ──
+  const KST = { timeZone: 'Asia/Seoul' };
+  function fmtDay(ts) { return new Date(ts).toLocaleDateString('ko-KR', { ...KST, month: 'long', day: 'numeric', weekday: 'short' }); }
+  function fmtTime(ts) { return new Date(ts).toLocaleTimeString('ko-KR', { ...KST, hour: '2-digit', minute: '2-digit' }); }
+  function fmtDateTime(ts) { return fmtDay(ts) + ' ' + fmtTime(ts); }
+  function todayStr() { return new Date().toLocaleDateString('sv-SE', KST); }
+  function shortDate(s) { const m = String(s).match(/\d{4}-(\d{2})-(\d{2})/); return m ? `${+m[1]}/${+m[2]}` : s; }
+
+  // 다른 기기에서 돌아왔을 때 최신 내용으로 (편집·입력 중이면 건드리지 않음)
+  document.addEventListener('visibilitychange', () => {
+    const a = document.activeElement;
+    const typing = a && (/TEXTAREA|INPUT/.test(a.tagName) || a.isContentEditable);
+    if (document.visibilityState === 'visible' && !editing && !typing && appShown) loadAll(true);
+  });
+
+  // ════════════════════════════════════════════════════════
+  //  로그인
+  // ════════════════════════════════════════════════════════
+  let appShown = false;
+  function handleSession(session) {
+    document.getElementById('authView').classList.toggle('hidden', !!session);
+    document.getElementById('app').classList.toggle('hidden', !session);
+    if (session && !appShown) { appShown = true; loadAll(); }
+    if (!session) { appShown = false; setStatus('로그인 필요'); }
+  }
+  async function login() {
+    const email = document.getElementById('authEmail').value.trim();
+    const password = document.getElementById('authPassword').value;
+    const err = document.getElementById('authErr');
+    if (!email || !password) { err.textContent = '이메일과 비밀번호를 입력해주세요.'; return; }
+    err.textContent = '로그인 중…';
+    const { error } = await db.auth.signInWithPassword({ email, password });
+    err.textContent = error ? errMsg(error) : '';
+  }
+  document.getElementById('authPassword').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
+
+  const savedTab = lsGet('cn_tab');
+  if (savedTab && (savedTab === 'ideas' || STAGES.some(s => s.id === savedTab))) tab = savedTab;
+  (async () => {
+    const { data: { session } } = await db.auth.getSession();
+    handleSession(session);
+    db.auth.onAuthStateChange((_e, s) => handleSession(s));
+  })();
+</script>
+</body>
+</html>

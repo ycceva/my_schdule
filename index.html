@@ -136,6 +136,21 @@
     transition: width 0.3s;
   }
 
+  /* ── 채널 기획노트 버튼 (노란 박스 바로 위, 노트 공책 색) ── */
+  .plan-note-btn {
+    display: block; width: 100%;
+    margin-bottom: 8px; padding: 14px 12px;
+    font-family: inherit; font-size: 18px; font-weight: 700;
+    color: #1f2a44;
+    background-color: #fbf09a;
+    background-image: repeating-linear-gradient(to bottom, transparent 0 15px, rgba(80,140,200,0.28) 15px 16px);
+    border: none; border-top: 6px solid #7c2b25;
+    border-radius: 6px;
+    cursor: pointer;
+    box-shadow: 0 2px 10px rgba(245,197,24,0.25);
+  }
+  .plan-note-btn:active { transform: scale(0.99); filter: brightness(0.96); }
+
   /* ── 빠른 입력 (오늘할거/이번주할거/일년목표/루틴) ── */
   /* 가장 중요한 섹션이라 테두리와 제목(라벨) 글자를 노란색으로 강조합니다. */
   .quick-box {
@@ -534,6 +549,9 @@
 
   <!-- 오늘할거 / 이번주할거 / 일년목표 / 루틴 -->
   <div class="section">
+    <!-- 채널 기획노트 바로가기. <a>로 만들면 아래 pointerdown 링크 처리가
+         새 창으로 열어버려서(홈 화면 앱에서는 로그인도 풀림) 버튼으로 같은 창 이동 -->
+    <button class="plan-note-btn" onclick="location.href='channel-note.html'">📒 채널 기획노트</button>
     <div class="quick-box">
       <div class="quick-row">
         <div class="quick-label" id="text_label_today" contenteditable="true" spellcheck="false"></div>
@@ -2206,7 +2224,7 @@
     //    백업 파일에 영구 누적되고, 화면의 "오늘" 수치만 날짜가
     //    바뀌면 자동으로 0%부터 다시 계산됩니다.
     // ════════════════════════════════════════════════════════
-    function backupData() {
+    async function backupData() {
       const data = {
         version: 1,
         exportedAt: new Date().toISOString(),
@@ -2216,6 +2234,21 @@
         pages: lsGet('pages', []),
         glucose: lsGet('glucose', []),
       };
+      // 채널 기획노트(channel-note.html)는 Supabase에만 있으므로 여기서 받아서 함께 백업
+      if (SUPA_READY && db) {
+        try {
+          const [n, i] = await Promise.all([
+            db.from('plan_notes').select('stage, content, updated_at'),
+            db.from('plan_ideas').select('stage, body, status, claude_note, created_at, updated_at').order('created_at'),
+          ]);
+          if (n.error) throw n.error;
+          if (i.error) throw i.error;
+          data.planNotes = n.data;
+          data.planIdeas = i.data;
+        } catch (e) {
+          if (!confirm('채널 기획노트를 불러오지 못했습니다(' + errMsg(e) + ').\n기획노트 없이 백업할까요?')) return;
+        }
+      }
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -2289,6 +2322,8 @@
         if (data.pages) { pages = data.pages; lsSet('pages', pages); }
         const hasGlucose = Array.isArray(data.glucose);
         if (hasGlucose) { glucoseLogs = data.glucose; lsSet('glucose', glucoseLogs); }
+        // 채널 기획노트: 백업 파일에 들어 있을 때만 교체 (옛 백업은 기획노트를 건드리지 않음)
+        const hasPlan = Array.isArray(data.planNotes) && Array.isArray(data.planIdeas);
 
         renderProgress();
         renderRoutines();
@@ -2298,6 +2333,15 @@
         if (SUPA_READY) {
           setStatus('saving');
           await syncAllToSupabase({ glucose: hasGlucose });
+          if (hasPlan) {
+            const { error: e1 } = await db.from('plan_notes').upsert(data.planNotes, { onConflict: 'user_id,stage' });
+            if (e1) throw e1;
+            await db.from('plan_ideas').delete().gte('id', 0);
+            if (data.planIdeas.length) {
+              const { error: e2 } = await db.from('plan_ideas').insert(data.planIdeas);
+              if (e2) throw e2;
+            }
+          }
           setStatus('saved');
         } else {
           setStatus('local');
