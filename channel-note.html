@@ -101,6 +101,12 @@
 
   .label { display: flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 700; color: var(--muted); margin: 0 0 4px; }
 
+  /* ── 자유 메모 ── */
+  .memo-box [contenteditable] {
+    min-height: 54px; font-size: 13px; line-height: 1.55;
+    background: rgba(255,255,255,0.6); border: 1px solid var(--line); border-radius: 5px; padding: 5px 8px;
+  }
+
   /* ── 표 묶음 ── */
   .block { margin-bottom: 16px; scroll-margin-top: 80px; }
   .block-head { display: flex; align-items: center; gap: 6px; border-bottom: 1.5px solid var(--ink); padding-bottom: 2px; margin-bottom: 4px; }
@@ -219,6 +225,7 @@
 
   // notes[stage] = { content, updated_at(서버 문자열 그대로), exists }
   // content = {
+  //   memo: 자유 메모 (사용자 메모장, 여러 줄),
   //   blocks: [{ title, cols: [{ n: 열 이름, w: 'mid'|'wide'|'narrow' }], rows: [[칸, …], …] }],
   //   todos: [{ text, done }],          ← 체크 사항 (클로드·나 둘 다 추가)
   //   decisions: [{ date, text }]       ← 결정 변경 이력
@@ -255,7 +262,7 @@
   function C(stage) {
     if (!notes[stage]) notes[stage] = { content: {}, updated_at: null, exists: false };
     const c = notes[stage].content;
-    c.blocks ||= []; c.todos ||= []; c.decisions ||= [];
+    c.memo ??= ''; c.blocks ||= []; c.todos ||= []; c.decisions ||= [];
     c.blocks.forEach(b => { b.cols ||= []; b.rows ||= []; });
     return c;
   }
@@ -375,7 +382,9 @@
 
   function stageHtml(stage) {
     const c = C(stage);
-    let h = '';
+    // 자유 메모 (아이디어 던지기와 별개, 이 탭에 늘 보이는 메모장)
+    let h = `<div class="block" id="blk-memo"><div class="block-head"><span class="no">✎</span><h2>메모</h2></div>
+      <div class="memo-box">${ed('memo', '', c.memo, '자유 메모 · Enter 줄바꿈 · 자동 저장')}</div></div>`;
 
     // 표 묶음 — 칸을 눌러 바로 수정
     c.blocks.forEach((b, bi) => {
@@ -431,6 +440,7 @@
     const b = +d.b, r = +d.r, ci = +d.c, i = +d.i;
     let fn;
     switch (d.k) {
+      case 'memo': fn = c => { c.memo = val; }; break;
       case 'bt': fn = c => { c.blocks[b].title = val; }; break;
       case 'c': fn = c => { c.blocks[b].rows[r][ci] = val; }; break;
       case 'h':
@@ -454,7 +464,7 @@
     const el = e.target.closest && e.target.closest('[data-k]');
     if (!el) return;
     // 표 칸은 Enter = 줄바꿈 (메모를 여러 줄로), ⌘/Ctrl+Enter = 끝내기. 나머지 칸은 Enter = 끝내기
-    const multi = el.dataset.k === 'c';
+    const multi = el.dataset.k === 'c' || el.dataset.k === 'memo';
     if (e.key === 'Enter' && !e.isComposing && (multi ? (e.metaKey || e.ctrlKey) : !e.shiftKey)) { e.preventDefault(); el.blur(); }
     if (e.key === 'Escape') { el.textContent = el.dataset.orig ?? el.textContent; el.blur(); }
   });
