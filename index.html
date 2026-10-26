@@ -222,6 +222,59 @@
     color: #4a8ac4; text-decoration: underline;
     word-break: break-all;
   }
+  /* ── 6개월 계획 (이번 달부터 6칸) ── */
+  .plan-box {
+    background: #1a1a1a;
+    border: 0.5px solid #2a2a2a;
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .plan-head {
+    display: grid; grid-template-columns: repeat(6, 1fr);
+    border-bottom: 0.5px solid #242424;
+  }
+  .plan-month {
+    font-size: 11px; color: #666; text-align: center;
+    padding: 3px 0;
+  }
+  .plan-month.now { color: #ddd; font-weight: 600; }
+  /* 달 경계 세로선: 6칸 폭마다 1px 선 */
+  .plan-body {
+    position: relative; padding: 3px 0;
+    background-image: linear-gradient(to right, transparent calc(100% - 1px), #232323 calc(100% - 1px));
+    background-size: calc(100% / 6) 100%;
+  }
+  .plan-today {
+    position: absolute; top: 0; bottom: 0; width: 1px;
+    background: rgba(245,197,24,0.55); pointer-events: none;
+  }
+  .plan-row { position: relative; height: 20px; cursor: pointer; overflow: hidden; }
+  .plan-row:active { background: #232323; }
+  .plan-bar {
+    position: absolute; top: 0; bottom: 0;
+    display: flex; align-items: center;
+    min-width: max-content; padding-left: 3px;
+  }
+  .plan-label { font-size: 12px; color: #ddd; white-space: nowrap; }
+  .plan-line {
+    flex: 1; min-width: 14px; height: 1.5px;
+    margin: 0 5px 0 5px; background: #4a8ac4; position: relative;
+  }
+  .plan-line::after {
+    content: ''; position: absolute; right: -5px; top: -3.5px;
+    border-left: 6px solid #4a8ac4;
+    border-top: 4px solid transparent; border-bottom: 4px solid transparent;
+  }
+  .plan-row.done .plan-label { color: #666; }
+  .plan-row.done .plan-line { background: #444; }
+  .plan-row.done .plan-line::after { border-left-color: #444; }
+  .plan-empty { font-size: 12px; color: #3a3a3a; padding: 2px 10px; }
+  .plan-field-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+  .plan-field-row > span { width: 32px; flex-shrink: 0; font-size: 13px; color: #888; }
+  .plan-field-row input[type=date] { color-scheme: dark; }
+  .plan-done-row { display: flex; align-items: center; gap: 6px; margin-top: 10px; font-size: 13px; color: #aaa; }
+  .plan-done-row input { width: 16px; height: 16px; accent-color: #4a8ac4; }
+
   .add-item-row { padding: 5px 10px; }
   .add-item-btn {
     font-size: 12px; color: #666; background: none;
@@ -529,6 +582,18 @@
     <div class="progress-section" id="progressSection"></div>
   </div>
 
+  <!-- 6개월 계획 -->
+  <div class="section">
+    <div class="section-title-row">
+      <div class="section-title" id="text_title_plan" contenteditable="true" spellcheck="false"></div>
+      <button class="add-btn" onclick="openPlanModal(null)">＋ 계획추가</button>
+    </div>
+    <div class="plan-box">
+      <div class="plan-head" id="planHead"></div>
+      <div class="plan-body" id="planBody"></div>
+    </div>
+  </div>
+
   <!-- 운동루틴 -->
   <div class="section">
     <div class="section-title-row">
@@ -700,6 +765,24 @@
       <div class="modal-actions">
         <button class="pv-btn" onclick="closePageAddModal()">취소</button>
         <button class="pv-btn" onclick="confirmAddPage()">추가</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6개월 계획 추가/수정 모달 -->
+  <div class="modal-overlay" id="planModal">
+    <div class="modal-box">
+      <div class="modal-title" id="planModalTitle">계획 추가</div>
+      <input type="text" id="planTitle" class="modal-input" placeholder="예: 식물학원" spellcheck="false">
+      <div class="plan-field-row"><span>시작</span><input type="date" id="planStart" class="modal-input"></div>
+      <div class="plan-field-row"><span>끝</span><input type="date" id="planEnd" class="modal-input"></div>
+      <div class="auth-sub" style="margin:6px 0 0 40px;">끝을 비우면 하루 일정</div>
+      <label class="plan-done-row"><input type="checkbox" id="planDone">완료</label>
+      <div class="auth-err" id="planErr"></div>
+      <div class="modal-actions">
+        <button class="pv-btn del" id="planDelBtn" onclick="deletePlan()" style="margin-right:auto;">삭제</button>
+        <button class="pv-btn" onclick="closePlanModal()">취소</button>
+        <button class="pv-btn" onclick="savePlan()">저장</button>
       </div>
     </div>
   </div>
@@ -1099,7 +1182,7 @@
     const TEXT_KEYS = [
       'title', 'today', 'week', 'year', 'routine',
       'label_today', 'label_week', 'label_year', 'label_routine',
-      'title_progress', 'title_exercise', 'title_money', 'title_shortcuts', 'title_backup',
+      'title_progress', 'title_plan', 'title_exercise', 'title_money', 'title_shortcuts', 'title_backup',
       'glucose_name_me', 'glucose_name_spouse'
     ];
     const TEXT_DEFAULTS = {
@@ -1109,6 +1192,7 @@
       label_year: '일년목표 증명해',
       label_routine: '루틴',
       title_progress: '26년 성장 진행률',
+      title_plan: '6개월 계획',
       title_exercise: '운동루틴',
       title_money: '돈벌자루틴',
       title_shortcuts: '바로가기',
@@ -1194,6 +1278,138 @@
         setStatus(error ? 'error' : 'saved');
       } catch (e) { console.error(e); setStatus('error', errMsg(e)); }
     }
+
+    // ════════════════════════════════════════════════════════
+    //  6개월 계획
+    //  이번 달이 맨 왼쪽 칸, 달이 바뀌면 한 칸씩 밀립니다.
+    //  계획 목록은 dashboard_texts의 'plan6m' 키에 JSON 문자열로 저장해서
+    //  기존 텍스트 동기화·백업·복원에 그대로 포함됩니다.
+    //  항목: {id, title, start:'YYYY-MM-DD', end:'YYYY-MM-DD'|'', done}
+    // ════════════════════════════════════════════════════════
+    const PLAN_MONTHS = 6;
+    function parsePlans(s) {
+      try { const a = JSON.parse(s || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; }
+    }
+    let plans = parsePlans(texts.plan6m);
+    let editingPlanId = null;
+
+    // 날짜 → 6칸 기준 위치(0 = 이번 달 1일 시작, 6 = 6칸 끝). endOfDay면 그날 끝 위치.
+    function planPos(dateStr, endOfDay) {
+      const now = new Date();
+      const [y, m, d] = dateStr.split('-').map(Number);
+      const idx = (y - now.getFullYear()) * 12 + (m - 1 - now.getMonth());
+      const dim = new Date(y, m, 0).getDate();
+      return idx + (endOfDay ? d : d - 1) / dim;
+    }
+    function fmtMD(dateStr) {
+      const [, m, d] = dateStr.split('-').map(Number);
+      return m + '/' + d;
+    }
+
+    function renderPlans() {
+      const now = new Date();
+      const head = document.getElementById('planHead');
+      head.innerHTML = '';
+      for (let i = 0; i < PLAN_MONTHS; i++) {
+        const dt = new Date(now.getFullYear(), now.getMonth() + i, 1);
+        const c = document.createElement('div');
+        c.className = 'plan-month' + (i === 0 ? ' now' : '');
+        // 해가 바뀌는 1월에만 연도를 붙임
+        c.textContent = (dt.getMonth() === 0 && i > 0 ? String(dt.getFullYear()).slice(2) + '년 ' : '') + (dt.getMonth() + 1) + '월';
+        head.appendChild(c);
+      }
+
+      const body = document.getElementById('planBody');
+      body.innerHTML = '';
+      // 6칸 범위에 걸치는 계획만 시작일 순으로 표시 (지난 계획은 데이터에만 남음)
+      const rows = plans
+        .filter(p => p.start)
+        .map(p => ({ p, s: planPos(p.start, false), e: p.end ? planPos(p.end, true) : planPos(p.start, true) }))
+        .filter(x => x.e > 0 && x.s < PLAN_MONTHS)
+        .sort((a, b) => a.p.start.localeCompare(b.p.start));
+
+      if (!rows.length) {
+        const empty = document.createElement('div');
+        empty.className = 'plan-empty';
+        empty.textContent = '계획 없음';
+        body.appendChild(empty);
+      }
+      rows.forEach(({ p, s, e }) => {
+        const row = document.createElement('div');
+        row.className = 'plan-row' + (p.done ? ' done' : '');
+        row.onclick = () => openPlanModal(p.id);
+        const bar = document.createElement('div');
+        bar.className = 'plan-bar';
+        const left = Math.max(0, s);
+        bar.style.left = (left / PLAN_MONTHS * 100) + '%';
+        if (p.end) bar.style.width = ((Math.min(PLAN_MONTHS, e) - left) / PLAN_MONTHS * 100) + '%';
+        const lbl = document.createElement('span');
+        lbl.className = 'plan-label';
+        lbl.textContent = (p.done ? '✓ ' : '') + fmtMD(p.start) + ' ' + (p.title || '');
+        bar.appendChild(lbl);
+        if (p.end) {
+          const line = document.createElement('span');
+          line.className = 'plan-line';
+          bar.appendChild(line);
+        }
+        row.appendChild(bar);
+        body.appendChild(row);
+      });
+
+      const today = document.createElement('div');
+      today.className = 'plan-today';
+      today.style.left = (planPos(todayStr(), false) / PLAN_MONTHS * 100) + '%';
+      body.appendChild(today);
+    }
+
+    function storePlans() {
+      texts.plan6m = JSON.stringify(plans);
+      dirtyTextKeys.add('plan6m');
+      lsSet('texts', texts);
+      syncText('plan6m', texts.plan6m);
+      renderPlans();
+    }
+
+    function openPlanModal(id) {
+      editingPlanId = id;
+      const p = id ? plans.find(x => x.id === id) : null;
+      document.getElementById('planModalTitle').textContent = p ? '계획 수정' : '계획 추가';
+      document.getElementById('planTitle').value = p ? p.title : '';
+      document.getElementById('planStart').value = p ? p.start : todayStr();
+      document.getElementById('planEnd').value = p ? (p.end || '') : '';
+      document.getElementById('planDone').checked = p ? !!p.done : false;
+      document.getElementById('planDelBtn').style.display = p ? '' : 'none';
+      document.getElementById('planErr').textContent = '';
+      document.getElementById('planModal').classList.add('on');
+    }
+    function closePlanModal() {
+      document.getElementById('planModal').classList.remove('on');
+      editingPlanId = null;
+    }
+    function savePlan() {
+      const title = document.getElementById('planTitle').value.trim();
+      const start = document.getElementById('planStart').value;
+      const end = document.getElementById('planEnd').value;
+      const done = document.getElementById('planDone').checked;
+      const errEl = document.getElementById('planErr');
+      if (!title) { errEl.textContent = '이름을 입력해주세요.'; return; }
+      if (!start) { errEl.textContent = '시작 날짜를 골라주세요.'; return; }
+      if (end && end < start) { errEl.textContent = '끝 날짜가 시작보다 빠릅니다.'; return; }
+      const p = editingPlanId ? plans.find(x => x.id === editingPlanId) : null;
+      if (p) Object.assign(p, { title, start, end, done });
+      else plans.push({ id: uid(), title, start, end, done });
+      closePlanModal();
+      storePlans();
+    }
+    function deletePlan() {
+      if (!editingPlanId || !confirm('이 계획을 삭제할까요?')) return;
+      plans = plans.filter(x => x.id !== editingPlanId);
+      closePlanModal();
+      storePlans();
+    }
+    document.getElementById('planTitle').addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); savePlan(); }
+    });
 
 
     // ════════════════════════════════════════════════════════
@@ -2184,6 +2400,7 @@
         (t.data || []).forEach(row => map[row.id] = row.content);
         TEXT_KEYS.forEach(k => { if (map[k] !== undefined && !dirtyTextKeys.has(k)) texts[k] = map[k]; });
         CAT_LABEL_KEYS.forEach(k => { if (map[k] !== undefined && !dirtyTextKeys.has(k)) texts[k] = map[k]; });
+        if (map.plan6m !== undefined && !dirtyTextKeys.has('plan6m')) { texts.plan6m = map.plan6m; plans = parsePlans(map.plan6m); }
         lsSet('texts', texts);
 
         pages = mergeById(p.data || [], pages, dirtyPageIds);
@@ -2196,6 +2413,7 @@
         const activeEl = document.activeElement;
         if (!activeEl || !activeEl.isContentEditable) {
           renderProgress();
+          renderPlans();
           renderRoutines();
           applyTexts();
           renderPages();
@@ -2314,7 +2532,7 @@
         const text = await file.text();
         const data = JSON.parse(text);
 
-        if (data.texts) { texts = data.texts; lsSet('texts', texts); }
+        if (data.texts) { texts = data.texts; lsSet('texts', texts); plans = parsePlans(texts.plan6m); }
         if (data.routines) { routines = data.routines; lsSet('routines', routines); }
         if (data.checks) { routineChecks = data.checks; lsSet('checks', routineChecks); }
         if (data.pages) { pages = data.pages; lsSet('pages', pages); }
@@ -2324,6 +2542,7 @@
         const hasPlan = Array.isArray(data.planNotes) && Array.isArray(data.planIdeas);
 
         renderProgress();
+        renderPlans();
         renderRoutines();
         applyTexts();
         renderPages();
@@ -2364,6 +2583,7 @@
         __lastDateStr = now;
         renderHeaderDate();
         renderProgress();
+        renderPlans();
         renderRoutines();
       }
     }, 60 * 1000);
@@ -2372,6 +2592,7 @@
       // Supabase 연결 여부와 상관없이 먼저 화면을 그린다
       renderHeaderDate();
       renderProgress();
+      renderPlans();
       renderRoutines();
       applyTexts();
       bindTexts();
