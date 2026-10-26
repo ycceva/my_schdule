@@ -777,7 +777,7 @@
       <div class="plan-field-row"><span>시작</span><input type="date" id="planStart" class="modal-input"></div>
       <div class="plan-field-row"><span>끝</span><input type="date" id="planEnd" class="modal-input"></div>
       <div class="auth-sub" style="margin:6px 0 0 40px;">끝을 비우면 하루 일정</div>
-      <label class="plan-done-row"><input type="checkbox" id="planDone">완료</label>
+      <label class="plan-done-row" id="planDoneRow"><input type="checkbox" id="planDone">완료</label>
       <div class="auth-err" id="planErr"></div>
       <div class="modal-actions">
         <button class="pv-btn del" id="planDelBtn" onclick="deletePlan()" style="margin-right:auto;">삭제</button>
@@ -1378,6 +1378,8 @@
       document.getElementById('planStart').value = p ? p.start : todayStr();
       document.getElementById('planEnd').value = p ? (p.end || '') : '';
       document.getElementById('planDone').checked = p ? !!p.done : false;
+      // 완료 체크와 삭제는 이미 있는 계획을 수정할 때만 보임
+      document.getElementById('planDoneRow').style.display = p ? '' : 'none';
       document.getElementById('planDelBtn').style.display = p ? '' : 'none';
       document.getElementById('planErr').textContent = '';
       document.getElementById('planModal').classList.add('on');
