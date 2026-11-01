@@ -136,10 +136,11 @@
     transition: width 0.3s;
   }
 
-  /* ── 채널 기획노트 버튼 (노란 박스 바로 위, 노트 공책 색) ── */
+  /* ── 채널 기획노트·혈당 일지 버튼 (노란 박스 바로 위, 노트 공책 색) ── */
+  .plan-note-row { display: flex; gap: 6px; margin-bottom: 6px; }
   .plan-note-btn {
     display: block; width: 20%; min-width: max-content;
-    margin-bottom: 6px; padding: 6px 10px;
+    padding: 6px 10px;
     font-family: inherit; font-size: 13px; font-weight: 700;
     color: #1f2a44;
     background: #fbf09a;
@@ -614,7 +615,10 @@
   <div class="section">
     <!-- 채널 기획노트 바로가기. <a>로 만들면 아래 pointerdown 링크 처리가
          새 창으로 열어버려서(홈 화면 앱에서는 로그인도 풀림) 버튼으로 같은 창 이동 -->
-    <button class="plan-note-btn" onclick="location.href='channel-note.html'">📒 채널 기획노트</button>
+    <div class="plan-note-row">
+      <button class="plan-note-btn" onclick="location.href='channel-note.html'">📒 채널 기획노트</button>
+      <button class="plan-note-btn" onclick="openGlucose(pages.find(p => p.type === 'glucose') || {})">🩸 혈당 일지</button>
+    </div>
     <div class="quick-box">
       <div class="quick-row">
         <div class="quick-label" id="text_label_today" contenteditable="true" spellcheck="false"></div>
