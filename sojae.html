@@ -69,11 +69,10 @@
   h3:first-child{padding-top:0}
   .memo{margin-top:auto; padding:6px 2px 0; font-size:11.5px; color:var(--muted); border-top:1px solid var(--line)}
 
-  /* Claude가 소재 찾을 때 읽는 곳 표시 */
-  a.ai{border-left:3px solid var(--a)}
-  a.ai b::after{content:"AI"; margin-left:6px; padding:1px 5px; border-radius:4px; font-size:10px; font-weight:800; letter-spacing:.3px; vertical-align:1px; background:var(--a); color:#141414}
+  /* Claude가 소재 찾을 때 읽는 곳: 제목 옆 작은 점 */
+  a.ai b::after{content:""; display:inline-block; width:6px; height:6px; margin-left:6px; border-radius:50%; background:var(--a); vertical-align:2px}
   .legend{display:flex; align-items:center; gap:6px; color:var(--muted); font-size:12px}
-  .legend i{font-style:normal; padding:1px 5px; border-radius:4px; font-size:10px; font-weight:800; background:var(--a); color:#141414}
+  .legend i{width:6px; height:6px; border-radius:50%; background:var(--a)}
 
   /* 좁은 화면: 한 단으로 */
   @media (max-width:860px){
@@ -89,7 +88,7 @@
 <header>
   <h1>소재 발굴</h1>
   <span class="date" id="today"></span>
-  <span class="legend"><i>AI</i>Claude가 소재 찾을 때 읽는 곳</span>
+  <span class="legend"><i></i>Claude가 소재 찾을 때 읽는 곳</span>
   <button class="back" onclick="location.href='index.html'">← 대시보드</button>
 </header>
 
@@ -126,28 +125,37 @@
     </section>
   </div>
 
-  <!-- 2단: 해외 (미국, 번역) -->
+  <!-- 2단: 미국 반응 + 유튜브 인기 -->
   <div class="col">
     <section class="card">
-      <h2><span class="no">4</span>해외에서 본 한국: 미국</h2>
+      <h2><span class="no">4</span>해외 반응: 미국</h2>
       <div class="body">
         <a href="https://www.reddit.com/r/korea/" target="_blank"><span class="t"><b>r/korea</b><small>한국 뉴스 최다 게시판</small></span></a>
         <a href="https://www.reddit.com/r/hanguk/" target="_blank"><span class="t"><b>r/hanguk</b><small>같은 뉴스, 다른 반응</small></span></a>
         <a href="https://www.reddit.com/r/worldnews/" target="_blank"><span class="t"><b>r/worldnews</b><small>외신 한국 기사에 댓글 수천 개</small></span></a>
         <a href="https://www.reddit.com/r/nottheonion/" target="_blank"><span class="t"><b>r/nottheonion</b><small>"한국 이거 실화?" 황당 뉴스</small></span></a>
-        <a href="https://www.reddit.com/search/?q=korea&t=week&sort=top" target="_blank"><span class="t"><b>레딧 'Korea' 주간</b><small>이번 주 한국 인기글</small></span></a>
+        <a href="https://www.reddit.com/r/popular/top/?t=day" target="_blank"><span class="t"><b>r/popular 오늘</b><small>레딧 전체 오늘 인기</small></span></a>
         <a href="https://hn.algolia.com/?q=korea&dateRange=pastWeek&sort=byPopularity" target="_blank"><span class="t"><b>해커뉴스 한국</b><small>AI, IT 정책 토론</small></span></a>
-        <h3>해외반응 번역</h3>
-        <a href="https://www.gasengi.com/" target="_blank"><span class="t"><b>가생이닷컴</b><small>해외 댓글 한국어 번역</small></span></a>
         <p class="memo">댓글 몇 개를 여론처럼 쓰지 않기, 번역 글은 원문 확인</p>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2><span class="no">5</span>유튜브 인기: 숏폼, 롱폼</h2>
+      <div class="body">
+        <a class="ai" href="https://playboard.co/en/chart/short/most-viewed-all-videos-in-united-states-daily" target="_blank"><span class="t"><b>미국 쇼츠</b><small>플레이보드, 전날 조회수 순위</small></span></a>
+        <a class="ai" href="https://playboard.co/en/chart/video/most-viewed-all-videos-in-united-states-daily" target="_blank"><span class="t"><b>미국 롱폼</b><small>플레이보드, 쇼츠 뺀 순위</small></span></a>
+        <a class="ai" href="https://playboard.co/en/chart/short/most-viewed-all-videos-in-japan-daily" target="_blank"><span class="t"><b>일본 쇼츠</b><small>플레이보드, 전날 조회수 순위</small></span></a>
+        <a class="ai" href="https://playboard.co/en/chart/video/most-viewed-all-videos-in-japan-daily" target="_blank"><span class="t"><b>일본 롱폼</b><small>플레이보드, 쇼츠 뺀 순위</small></span></a>
+        <p class="memo">하루 단위 순위, 광고 영상 섞임. 형식 공부용</p>
       </div>
     </section>
   </div>
 
-  <!-- 3단: 해외 (일본, 중국) + 릴스 -->
+  <!-- 3단: 일본, 중국, 번역 + 릴스 -->
   <div class="col">
     <section class="card">
-      <h2><span class="no">5</span>해외에서 본 한국: 일본, 중국</h2>
+      <h2><span class="no">6</span>해외 반응: 일본, 중국, 번역</h2>
       <div class="body">
         <h3>일본</h3>
         <a class="ai" href="https://news.yahoo.co.jp/ranking/access/news" target="_blank"><span class="t"><b>야후재팬 많이 본 뉴스</b><small>지금 순위, 댓글 많음</small></span></a>
@@ -156,11 +164,13 @@
         <a class="ai" href="https://tophub.today/n/KqndgxeLl9" target="_blank"><span class="t"><b>웨이보 실시간 검색어</b><small>今日热榜 경유, 몇 분 단위</small></span></a>
         <a class="ai" href="https://tophub.today/n/mproPpoq6O" target="_blank"><span class="t"><b>즈후 인기 목록</b><small>今日热榜 경유, 몇 분 단위</small></span></a>
         <a href="https://tophub.today/" target="_blank"><span class="t"><b>今日热榜 전체</b><small>더우인 등 여러 사이트 순위 모음</small></span></a>
+        <h3>해외반응 번역</h3>
+        <a href="https://www.gasengi.com/" target="_blank"><span class="t"><b>가생이닷컴</b><small>해외 댓글 한국어 번역</small></span></a>
       </div>
     </section>
 
     <section class="card">
-      <h2><span class="no">6</span>릴스, 숏폼 유행</h2>
+      <h2><span class="no">7</span>릴스, 틱톡 유행</h2>
       <div class="body">
         <a href="https://later.com/blog/instagram-reels-trends" target="_blank"><span class="t"><b>Later 릴스 트렌드</b><small>매주 유행하는 형식</small></span></a>
         <a href="https://ads.tiktok.com/business/creativecenter/inspiration/popular/hashtag/pc/en?region=US&period=7" target="_blank"><span class="t"><b>틱톡 인기 해시태그</b><small>7일 인기, 나라 선택</small></span></a>
