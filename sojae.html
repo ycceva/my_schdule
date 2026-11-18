@@ -5,19 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>소재 발굴</title>
 <style>
-  /* 스케줄 대시보드와 같은 어두운 바탕. 영역마다 색 하나(--a)로 구분 */
+  /* 스케줄 대시보드와 같은 어두운 바탕. 강조색 하나(--a) */
   :root{
     --bg:#141414; --card:#1c1c1c; --btn:#242424; --btn-h:#2d2d2d;
     --ink:#ecebe8; --muted:#8f8b84; --line:#2c2c2c; --a:#f783ac;
   }
   *{box-sizing:border-box; margin:0; padding:0}
-  html,body{height:100%}
   body{
     font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;
     background:var(--bg); color:var(--ink); line-height:1.35; -webkit-font-smoothing:antialiased;
-    display:flex; flex-direction:column; gap:12px; padding:14px 18px 16px;
-    font-size:13px; min-height:640px;
+    font-size:12.5px; padding:14px 18px 16px;
   }
+  .wrap{max-width:1320px; margin:0 auto; display:flex; flex-direction:column; gap:12px}
 
   header{display:flex; align-items:center; gap:12px}
   h1{font-size:17px; font-weight:750; letter-spacing:-.3px}
@@ -28,71 +27,58 @@
   }
   .back:active{filter:brightness(.95)}
 
-  /* 배치: 왼쪽 트래픽센트(세로 전체) + 오른쪽 위 작은 셋 + 오른쪽 아래 해외 */
-  main{
-    flex:1; min-height:0;
-    display:grid; gap:12px;
-    grid-template-columns:1.05fr 1fr 1fr 1fr;
-    grid-template-rows:auto 1fr;
-    grid-template-areas:
-      "ts news trend reels"
-      "ts world world world";
-  }
-  .ts{grid-area:ts} .news{grid-area:news} .trend{grid-area:trend} .reels{grid-area:reels} .world{grid-area:world}
+  /* 배치: 3단. 단마다 칸을 위에서부터 쌓고, 마지막 칸이 늘어나 세 단 바닥을 맞춘다 */
+  main{display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:12px; align-items:stretch}
+  .col{display:flex; flex-direction:column; gap:12px; min-width:0}
+  .col > .card:last-child{flex:1}
 
-  /* 카드: 색 머리띠 + 영역 색 테두리 */
+  /* 카드 */
   .card{
     background:var(--card); border:1px solid color-mix(in srgb, var(--a) 35%, var(--line));
-    border-radius:10px; overflow:hidden; display:flex; flex-direction:column; min-height:0;
+    border-radius:10px; overflow:hidden; display:flex; flex-direction:column;
   }
   .card > h2{
     display:flex; align-items:center; gap:8px;
-    padding:9px 12px; font-size:14px; font-weight:750;
+    padding:7px 11px; font-size:13.5px; font-weight:750;
     background:color-mix(in srgb, var(--a) 22%, var(--card));
     border-bottom:1px solid color-mix(in srgb, var(--a) 40%, var(--line));
   }
   .card > h2 .no{
-    width:20px; height:20px; border-radius:5px; flex:none;
-    display:grid; place-items:center; font-size:12px; font-weight:800;
+    width:19px; height:19px; border-radius:5px; flex:none;
+    display:grid; place-items:center; font-size:11.5px; font-weight:800;
     background:var(--a); color:#141414;
   }
-  .card > h2 small{margin-left:auto; font-size:11.5px; font-weight:500; color:var(--muted)}
-  .body{padding:10px 12px 12px; display:flex; flex-direction:column; gap:7px; min-height:0; flex:1}
+  .body{padding:8px 10px 10px; display:flex; flex-direction:column; gap:5px; flex:1}
 
-  /* 링크: 제목 + 한 줄 설명 */
+  /* 링크: 한 줄에 제목 + 설명 */
   a{
     display:flex; align-items:center; gap:8px; min-width:0;
-    padding:7px 10px; border-radius:7px; background:var(--btn);
+    padding:6px 9px; border-radius:7px; background:var(--btn);
     color:inherit; text-decoration:none; border:1px solid transparent;
     transition:background .12s, border-color .12s;
   }
   a:hover{background:var(--btn-h); border-color:var(--a)}
   a::after{content:"↗"; margin-left:auto; color:var(--muted); flex:none}
   a:hover::after{color:var(--a)}
-  a .t{display:flex; flex-direction:column; min-width:0}
-  a b{font-weight:650; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
-  a small{font-size:11.5px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  a .t{display:flex; align-items:baseline; gap:8px; min-width:0}
+  a b{font-weight:650; white-space:nowrap; flex:none}
+  a small{font-size:11.5px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0}
 
-  /* 트래픽센트: 묶음 3개 */
-  .ts .body{gap:0; justify-content:space-between}
-  .block{display:flex; flex-direction:column; gap:7px; padding:10px 0; border-top:1px solid var(--line)}
-  .block:first-child{border-top:0; padding-top:0}
-  .block:last-child{padding-bottom:0}
-  .block a{background:color-mix(in srgb, var(--a) 14%, var(--btn)); padding:9px 10px}
-  .block a b{font-size:14px}
-  dl{display:grid; grid-template-columns:auto 1fr; gap:3px 10px; font-size:12px; padding:0 2px}
-  dt{color:var(--muted); font-weight:600; white-space:nowrap}
-  dd{color:#c9c6c0}
+  /* 칸 안 소제목, 맨 아래 메모 */
+  h3{font-size:11.5px; font-weight:750; color:var(--a); letter-spacing:.2px; padding:4px 2px 0}
+  h3:first-child{padding-top:0}
+  .memo{margin-top:auto; padding:6px 2px 0; font-size:11.5px; color:var(--muted); border-top:1px solid var(--line)}
 
-  /* 해외: 나라별 4칸 */
-  .world .body{flex-direction:row; gap:12px}
-  .group{flex:1; min-width:0; display:flex; flex-direction:column; gap:7px}
-  .group + .group{border-left:1px solid var(--line); padding-left:12px}
-  .group h3{font-size:12px; font-weight:750; color:var(--a); letter-spacing:.2px; padding:0 2px 2px}
-  .world .note{font-weight:500}
+  /* 좁은 화면: 한 단으로 */
+  @media (max-width:860px){
+    body{padding:12px 16px 16px}
+    main{grid-template-columns:minmax(0,1fr)}
+    .col > .card:last-child{flex:none}
+  }
 </style>
 </head>
 <body>
+<div class="wrap">
 
 <header>
   <h1>소재 발굴</h1>
@@ -102,99 +88,82 @@
 
 <main>
 
-  <!-- 1. 트래픽센트 -->
-  <section class="card ts">
-    <h2><span class="no">1</span>트래픽센트</h2>
-    <div class="body">
-      <div class="block">
-        <a href="https://trafficscent.com/community?category=all&country=KR&site=%EC%A0%84%EC%B2%B4&sort=popular" target="_blank"><span class="t"><b>커뮤니티 인기글</b></span></a>
-        <dl>
-          <dt>카테고리</dt><dd>오늘의 이슈 · 일상 · 경제·주식 · 부동산 · IT · AI · 유머</dd>
-          <dt>정렬</dt><dd>인기 · 급상승 · 최신</dd>
-          <dt>국가</dt><dd>한국 · 미국(레딧 포함) · 일본 · 대만</dd>
-        </dl>
+  <!-- 1단: 국내 지금 -->
+  <div class="col">
+    <section class="card">
+      <h2><span class="no">1</span>뉴스 랭킹</h2>
+      <div class="body">
+        <a href="https://news.nate.com/rank/interest?sc=all" target="_blank"><span class="t"><b>네이트 많이 본 뉴스</b><small>오늘 1~50위</small></span></a>
+        <a href="https://news.daum.net/" target="_blank"><span class="t"><b>다음 실시간 트렌드</b><small>첫 화면, 몇 분 단위</small></span></a>
+        <a href="https://news.naver.com/main/ranking/popularDay.naver" target="_blank"><span class="t"><b>네이버 뉴스 랭킹</b><small>언론사별 많이 본 뉴스</small></span></a>
       </div>
-      <div class="block">
-        <a href="https://trafficscent.com/youtube?category=all&country=KR&type=shorts&sort=popular" target="_blank"><span class="t"><b>유튜브 인기 쇼츠</b></span></a>
-        <dl>
-          <dt>카테고리</dt><dd>뉴스·시사 · IT·과학 · 일상 · 뷰티·패션 · 코미디 · 동물 · 자동차</dd>
-          <dt>형식</dt><dd>쇼츠 · 롱폼</dd>
-          <dt>국가</dt><dd>한국 · 미국 · 일본</dd>
-        </dl>
+    </section>
+
+    <section class="card">
+      <h2><span class="no">2</span>구글, X 트렌드</h2>
+      <div class="body">
+        <a href="https://trends.google.com/trending?geo=KR" target="_blank"><span class="t"><b>구글 트렌드</b><small>24시간 급상승 검색어</small></span></a>
+        <a href="https://trends24.in/korea/" target="_blank"><span class="t"><b>X 트렌드</b><small>trends24, 시간대별 키워드</small></span></a>
       </div>
-      <div class="block">
-        <a href="https://trafficscent.com/blog?category=all&site=%EC%A0%84%EC%B2%B4&sort=popular" target="_blank"><span class="t"><b>인기 블로그 글</b></span></a>
-        <dl>
-          <dt>카테고리</dt><dd>경제·재테크·부업 · 일상·에세이 · IT · 커리어 · 문화·도서</dd>
-          <dt>사이트</dt><dd>네이버블로그 · 브런치 · 티스토리 등</dd>
-        </dl>
+    </section>
+
+    <section class="card">
+      <h2><span class="no">3</span>커뮤니티</h2>
+      <div class="body">
+        <a href="https://www.fmkorea.com/best2" target="_blank"><span class="t"><b>에펨코리아 포텐 화제순</b><small>지금 반응 센 글</small></span></a>
+        <a href="https://www.fmkorea.com/best" target="_blank"><span class="t"><b>에펨코리아 포텐 최신순</b><small>막 터진 글</small></span></a>
+        <a href="https://www.clien.net/service/board/park" target="_blank"><span class="t"><b>클리앙 모두의공원</b><small>IT, 경제, 체감 경기</small></span></a>
+        <a href="https://www.clien.net/service/board/news" target="_blank"><span class="t"><b>클리앙 새로운소식</b><small>회원이 올리는 뉴스</small></span></a>
+        <p class="memo">관심 신호로만 보고, 사실은 원문으로 확인</p>
       </div>
-    </div>
-  </section>
+    </section>
+  </div>
 
-  <!-- 2. 뉴스 -->
-  <section class="card news">
-    <h2><span class="no">2</span>뉴스</h2>
-    <div class="body">
-      <a href="https://trafficscent.com/reports" target="_blank"><span class="t"><b>트래픽센트 일간 리포트</b><small>전날 24시간 요약, 오전 7시</small></span></a>
-      <a href="https://trafficscent.com/news?category=all&country=KR" target="_blank"><span class="t"><b>트래픽센트 언론사 뉴스</b><small>속보 · 경제·증시 · IT</small></span></a>
-      <a href="https://news.naver.com/main/ranking/popularDay.naver" target="_blank"><span class="t"><b>네이버 뉴스 랭킹</b><small>언론사별 많이 본 뉴스</small></span></a>
-    </div>
-  </section>
-
-  <!-- 3. 구글 · X 트렌드 -->
-  <section class="card trend">
-    <h2><span class="no">3</span>구글 · X 실시간 트렌드</h2>
-    <div class="body">
-      <a href="https://trends.google.com/trending?geo=KR" target="_blank"><span class="t"><b>구글 트렌드</b><small>24시간 급상승 검색어</small></span></a>
-      <a href="https://trends24.in/korea/" target="_blank"><span class="t"><b>X 트렌드 (trends24)</b><small>시간대별 트렌드 키워드</small></span></a>
-      <dl><dt>국가</dt><dd>한국 · 미국 · 일본 (페이지에서 선택)</dd></dl>
-    </div>
-  </section>
-
-  <!-- 4. 릴스 · 숏폼 -->
-  <section class="card reels">
-    <h2><span class="no">4</span>릴스 · 숏폼 유행</h2>
-    <div class="body">
-      <a href="https://later.com/blog/instagram-reels-trends" target="_blank"><span class="t"><b>Later 릴스 트렌드</b><small>매주 유행하는 릴스 형식</small></span></a>
-      <a href="https://ads.tiktok.com/business/creativecenter/inspiration/popular/hashtag/pc/en?region=US&period=7" target="_blank"><span class="t"><b>틱톡 인기 해시태그</b><small>7일 인기 해시태그, 나라 선택</small></span></a>
-    </div>
-  </section>
-
-  <!-- 5. 해외에서 본 한국 -->
-  <section class="card world">
-    <h2><span class="no">5</span>해외에서 본 한국 · 갑론을박<small class="note">댓글 몇 개를 여론처럼 쓰지 않기 · 번역 글은 원문 확인</small></h2>
-    <div class="body">
-      <div class="group">
-        <h3>미국</h3>
+  <!-- 2단: 해외 (미국, 번역) -->
+  <div class="col">
+    <section class="card">
+      <h2><span class="no">4</span>해외에서 본 한국: 미국</h2>
+      <div class="body">
         <a href="https://www.reddit.com/r/korea/" target="_blank"><span class="t"><b>r/korea</b><small>한국 뉴스 최다 게시판</small></span></a>
         <a href="https://www.reddit.com/r/hanguk/" target="_blank"><span class="t"><b>r/hanguk</b><small>같은 뉴스, 다른 반응</small></span></a>
         <a href="https://www.reddit.com/r/worldnews/" target="_blank"><span class="t"><b>r/worldnews</b><small>외신 한국 기사에 댓글 수천 개</small></span></a>
         <a href="https://www.reddit.com/r/nottheonion/" target="_blank"><span class="t"><b>r/nottheonion</b><small>"한국 이거 실화?" 황당 뉴스</small></span></a>
         <a href="https://www.reddit.com/search/?q=korea&t=week&sort=top" target="_blank"><span class="t"><b>레딧 'Korea' 주간</b><small>이번 주 한국 인기글</small></span></a>
-        <a href="https://hn.algolia.com/?q=korea&dateRange=pastWeek&sort=byPopularity" target="_blank"><span class="t"><b>해커뉴스 한국</b><small>AI·IT 정책 토론</small></span></a>
+        <a href="https://hn.algolia.com/?q=korea&dateRange=pastWeek&sort=byPopularity" target="_blank"><span class="t"><b>해커뉴스 한국</b><small>AI, IT 정책 토론</small></span></a>
+        <h3>해외반응 번역</h3>
+        <a href="https://www.gasengi.com/" target="_blank"><span class="t"><b>가생이닷컴</b><small>해외 댓글 한국어 번역</small></span></a>
+        <p class="memo">댓글 몇 개를 여론처럼 쓰지 않기, 번역 글은 원문 확인</p>
       </div>
-      <div class="group">
+    </section>
+  </div>
+
+  <!-- 3단: 해외 (일본, 중국) + 릴스 -->
+  <div class="col">
+    <section class="card">
+      <h2><span class="no">5</span>해외에서 본 한국: 일본, 중국</h2>
+      <div class="body">
         <h3>일본</h3>
         <a href="https://b.hatena.ne.jp/search/text?q=%E9%9F%93%E5%9B%BD&sort=popular" target="_blank"><span class="t"><b>하테나 북마크 '韓国'</b><small>짧고 차분한 코멘트</small></span></a>
         <a href="https://news.yahoo.co.jp/search?p=%E9%9F%93%E5%9B%BD" target="_blank"><span class="t"><b>야후재팬 뉴스 '韓国'</b><small>최대 뉴스 댓글 (혐한 많음)</small></span></a>
-        <a href="https://girlschannel.net/" target="_blank"><span class="t"><b>걸즈채널</b><small>'韓国' 검색 · 생활·뷰티</small></span></a>
-      </div>
-      <div class="group">
+        <a href="https://girlschannel.net/" target="_blank"><span class="t"><b>걸즈채널</b><small>'韓国' 검색, 생활과 뷰티</small></span></a>
         <h3>중국</h3>
-        <a href="https://tophub.today/" target="_blank"><span class="t"><b>今日热榜</b><small>웨이보·더우인·즈후 순위 모음</small></span></a>
+        <a href="https://tophub.today/" target="_blank"><span class="t"><b>今日热榜</b><small>웨이보, 더우인, 즈후 순위</small></span></a>
         <a href="https://www.zhihu.com/search?type=content&q=%E9%9F%A9%E5%9B%BD" target="_blank"><span class="t"><b>즈후 '韩国'</b><small>"한국은 왜?" 질문형 토론</small></span></a>
         <a href="https://s.weibo.com/weibo?q=%E9%9F%A9%E5%9B%BD" target="_blank"><span class="t"><b>웨이보 '韩国'</b><small>중국 SNS 반응</small></span></a>
       </div>
-      <div class="group">
-        <h3>해외반응 번역</h3>
-        <a href="https://www.gasengi.com/" target="_blank"><span class="t"><b>가생이닷컴</b><small>해외 댓글 한국어 번역</small></span></a>
-        <a href="https://trafficscent.com/community?category=all&country=KR&site=%EA%B0%80%EC%83%9D%EC%9D%B4&sort=popular" target="_blank"><span class="t"><b>가생이 인기글</b><small>트래픽센트 모음</small></span></a>
+    </section>
+
+    <section class="card">
+      <h2><span class="no">6</span>릴스, 숏폼 유행</h2>
+      <div class="body">
+        <a href="https://later.com/blog/instagram-reels-trends" target="_blank"><span class="t"><b>Later 릴스 트렌드</b><small>매주 유행하는 형식</small></span></a>
+        <a href="https://ads.tiktok.com/business/creativecenter/inspiration/popular/hashtag/pc/en?region=US&period=7" target="_blank"><span class="t"><b>틱톡 인기 해시태그</b><small>7일 인기, 나라 선택</small></span></a>
       </div>
-    </div>
-  </section>
+    </section>
+  </div>
 
 </main>
+</div>
 
 <script>
   document.getElementById("today").textContent =
